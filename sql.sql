@@ -5,6 +5,7 @@ CREATE TABLE Mesas (
     numero INTEGER UNIQUE NOT NULL,
     pos_x INTEGER NOT NULL DEFAULT 0,
     pos_y INTEGER NOT NULL DEFAULT 0,
+    reservada_a TEXT,
     estado TEXT CHECK(estado IN ('Libre', 'Ocupada', 'Reservada')) NOT NULL
 );
 

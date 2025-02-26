@@ -1,13 +1,15 @@
 class Mesa:
-    def __init__(self, id, numero, estado, pos_x, pos_y):
+    def __init__(self, id, numero, estado, pos_x, pos_y, reservada_a=None):
         self.id = id
         self.numero = numero
         self.estado = estado
         self.pos_x = pos_x
         self.pos_y = pos_y
+        self.reservada_a = reservada_a
 
     def __repr__(self):
-        return f"Mesa {self.numero} ({self.estado}) - Posición: ({self.pos_x}, {self.pos_y})"
+        reservada_info = f" - Reservada a: {self.reservada_a}" if self.reservada_a else ""
+        return f"Mesa {self.numero} ({self.estado}) - Posición: ({self.pos_x}, {self.pos_y}){reservada_info}"
 
 
 class Producto:
