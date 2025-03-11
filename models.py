@@ -13,13 +13,14 @@ class Mesa:
 
 
 class Producto:
-    def __init__(self, id, nombre, precio):
+    def __init__(self, id, nombre, precio, categoria):
         self.id = id
         self.nombre = nombre
         self.precio = precio
+        self.categoria = categoria
 
     def __repr__(self):
-        return f"{self.nombre} - ${self.precio:.2f}"
+        return f"{self.nombre} - ${self.precio:.2f} ({self.categoria})"
 
 class Ingrediente:
     def __init__(self, id, nombre, stock, stock_minimo, unidad):
@@ -50,10 +51,11 @@ class Comanda:
         return f"Comanda {self.id} - Mesa {self.mesa_id} ({self.estado})"
 
 class DetalleComanda:
-    def __init__(self, id, comanda_id, producto_id, cantidad, subtotal, notas, ingredientes_excluidos, ingredientes_agregados):
+    def __init__(self, id, comanda_id, producto_id, producto_nombre, cantidad, subtotal, notas, ingredientes_excluidos, ingredientes_agregados):
         self.id = id
         self.comanda_id = comanda_id
         self.producto_id = producto_id
+        self.producto_nombre = producto_nombre
         self.cantidad = cantidad
         self.subtotal = subtotal
         self.notas = notas
@@ -61,4 +63,4 @@ class DetalleComanda:
         self.ingredientes_agregados = ingredientes_agregados
 
     def __repr__(self):
-        return f"Producto {self.producto_id} x{self.cantidad} - ${self.subtotal:.2f}"
+        return f"{self.producto_nombre} x{self.cantidad} - ${self.subtotal:.2f}"

@@ -20,7 +20,8 @@ CREATE TABLE Ingredientes (
 CREATE TABLE Productos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT NOT NULL,
-    precio REAL NOT NULL
+    precio REAL NOT NULL,
+    categoria TEXT NOT NULL CHECK(categoria IN ('Entrada', 'Plato principal', 'Desayuno/Merienda', 'Postre', 'Alchohol', 'No alcohólico')),
 );
 
 CREATE TABLE Recetas (
