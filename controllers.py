@@ -57,13 +57,42 @@ def eliminar_mesa(mesa_id):
 def obtener_todos_los_productos():
     with conectar_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, nombre, precio, categoria FROM Productos")
-        return [Producto(*fila) for fila in cursor.fetchall()]
+        cursor.execute("SELECT id, nombre, precio, categoria, imagen FROM Productos")
+        productos = []
+        for fila in cursor.fetchall():
+            productos.append(Producto(*fila))
+        return productos
 
-def agregar_producto(nombre, precio, categoria):
+def agregar_producto(nombre, precio, categoria, imagen=None):
     with conectar_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO Productos (nombre, precio, categoria) VALUES (?, ?, ?)", (nombre, precio, categoria))
+        # Leer la imagen como binario si se proporciona
+        imagen_blob = None
+        if imagen:
+            with open(imagen, "rb") as file:
+                imagen_blob = file.read()
+        cursor.execute(
+            "INSERT INTO Productos (nombre, precio, categoria, imagen) VALUES (?, ?, ?, ?)",
+            (nombre, precio, categoria, imagen_blob),
+        )
+        conn.commit()
+
+def editar_producto(producto_id, nombre, precio, categoria, imagen=None):
+    with conectar_db() as conn:
+        cursor = conn.cursor()
+        # Leer la imagen como binario si se proporciona
+        imagen_blob = None
+        if imagen:
+            with open(imagen, "rb") as file:
+                imagen_blob = file.read()
+        cursor.execute(
+            """
+            UPDATE Productos
+            SET nombre = ?, precio = ?, categoria = ?, imagen = ?
+            WHERE id = ?
+            """,
+            (nombre, precio, categoria, imagen_blob, producto_id),
+        )
         conn.commit()
 
 def eliminar_producto(producto_id):

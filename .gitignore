@@ -3,4 +3,37 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+
+# Entornos virtuales
+env/
+venv/
+.venv/
+ENV/
+.ENV/
+
+# Archivos de configuración de IDE
+.vscode/
+.idea/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de base de datos locales
+*.sqlite3
 *.db
+*.sql
+
+# Archivos de logs
+*.log
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Archivos de configuración de PyQt5
+*.pyc
+*.qrc
+*.ui~

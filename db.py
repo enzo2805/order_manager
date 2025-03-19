@@ -28,7 +28,8 @@ def crear_tablas():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
             precio REAL NOT NULL,
-            categoria TEXT NOT NULL CHECK(categoria IN ('Entrada', 'Plato principal', 'Desayuno/Merienda', 'Postre', 'Alchohol', 'No alcohólico')),
+            imagen TEXT,
+            categoria TEXT NOT NULL CHECK(categoria IN ('Entrada', 'Plato principal', 'Desayuno/Merienda', 'Postre', 'Alchohol', 'No alcoholico', 'Extra')),
         );
 
         CREATE TABLE IF NOT EXISTS Comandas (

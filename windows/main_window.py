@@ -1,0 +1,89 @@
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QAction, QWidget
+
+import sys
+
+from windows.gestionar_menu_dialog import GestionarMenuDialog
+from windows.interfaz_mesas import InterfazMesas
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Gestión de Comandas")
+        self.setGeometry(100, 100, 400, 300)
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+        self.layout_principal = QVBoxLayout()
+
+        self.boton_dine_in = QPushButton("Comer en el lugar")
+        self.boton_dine_in.clicked.connect(self.dine_in)
+        self.layout_principal.addWidget(self.boton_dine_in)
+
+        self.boton_take_away = QPushButton("Para llevar")
+        self.boton_take_away.clicked.connect(self.take_away)
+        self.layout_principal.addWidget(self.boton_take_away)
+
+        self.boton_ver_mesas = QPushButton("Ver Mesas")
+        self.boton_ver_mesas.clicked.connect(self.ver_mesas)
+        self.layout_principal.addWidget(self.boton_ver_mesas)
+
+        self.boton_ver_comandas = QPushButton("Ver Comandas")
+        self.boton_ver_comandas.clicked.connect(self.ver_comandas)
+        self.layout_principal.addWidget(self.boton_ver_comandas)
+
+        self.boton_gestionar_menu = QPushButton("Gestionar Menú")
+        self.boton_gestionar_menu.clicked.connect(self.gestionar_menu)
+        self.layout_principal.addWidget(self.boton_gestionar_menu)
+
+        self.central_widget.setLayout(self.layout_principal)
+
+        self.crear_menu()
+
+    def crear_menu(self):
+        menubar = self.menuBar()
+        menu_opciones = menubar.addMenu("Opciones")
+
+        accion_dine_in = QAction("Comer en el lugar", self)
+        accion_dine_in.triggered.connect(self.dine_in)
+        menu_opciones.addAction(accion_dine_in)
+
+        accion_take_away = QAction("Para llevar", self)
+        accion_take_away.triggered.connect(self.take_away)
+        menu_opciones.addAction(accion_take_away)
+
+        accion_ver_mesas = QAction("Ver Mesas", self)
+        accion_ver_mesas.triggered.connect(self.ver_mesas)
+        menu_opciones.addAction(accion_ver_mesas)
+
+        accion_ver_comandas = QAction("Ver Comandas", self)
+        accion_ver_comandas.triggered.connect(self.ver_comandas)
+        menu_opciones.addAction(accion_ver_comandas)
+
+        accion_gestionar_menu = QAction("Gestionar Menú", self)
+        accion_gestionar_menu.triggered.connect(self.gestionar_menu)
+        menu_opciones.addAction(accion_gestionar_menu)
+
+    def dine_in(self):
+        # Aquí puedes agregar la lógica para gestionar las comandas de "Comer en el lugar"
+        print("Comer en el lugar seleccionado")
+
+    def take_away(self):
+        # Aquí puedes agregar la lógica para gestionar las comandas de "Para llevar"
+        print("Para llevar seleccionado")
+
+    def ver_mesas(self):
+        self.ventana_mesas = InterfazMesas()
+        self.ventana_mesas.show()
+
+    def ver_comandas(self):
+        # Aquí puedes agregar la lógica para ver las comandas
+        print("Ver Comandas seleccionado")
+
+    def gestionar_menu(self):
+        self.ventana_menu = GestionarMenuDialog(self)
+        self.ventana_menu.exec_()
+
+def iniciar_interfaz():
+    app = QApplication(sys.argv)
+    ventana = MainWindow()
+    ventana.show()
+    sys.exit(app.exec_())
