@@ -11,6 +11,7 @@ def crear_tablas():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             numero INTEGER UNIQUE NOT NULL,
             estado TEXT CHECK(estado IN ('Libre', 'Ocupada', 'Reservada')) NOT NULL,
+            reservada_a TEXT,
             pos_x INTEGER DEFAULT 0,
             pos_y INTEGER DEFAULT 0
         );
@@ -26,7 +27,8 @@ def crear_tablas():
         CREATE TABLE IF NOT EXISTS Productos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
-            precio REAL NOT NULL
+            precio REAL NOT NULL,
+            categoria TEXT NOT NULL CHECK(categoria IN ('Entrada', 'Plato principal', 'Desayuno/Merienda', 'Postre', 'Alchohol', 'No alcohólico')),
         );
 
         CREATE TABLE IF NOT EXISTS Comandas (

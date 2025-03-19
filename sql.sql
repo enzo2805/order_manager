@@ -24,14 +24,14 @@ CREATE TABLE Productos (
     categoria TEXT NOT NULL CHECK(categoria IN ('Entrada', 'Plato principal', 'Desayuno/Merienda', 'Postre', 'Alchohol', 'No alcohólico')),
 );
 
-CREATE TABLE Recetas (
+/*CREATE TABLE Recetas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     producto_id INTEGER NOT NULL,
     ingrediente_id INTEGER NOT NULL,
     cantidad REAL NOT NULL, -- Cantidad de ingrediente utilizada en la receta
     FOREIGN KEY (producto_id) REFERENCES Productos(id),
     FOREIGN KEY (ingrediente_id) REFERENCES Ingredientes(id)
-);
+);*/
 
 CREATE TABLE Comandas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
