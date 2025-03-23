@@ -34,8 +34,9 @@ def crear_tablas():
 
         CREATE TABLE IF NOT EXISTS Comandas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            mesa_id INTEGER NOT NULL,
+            mesa_id INTEGER,
             fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            tipo TEXT DEFAULT 'Comer en el lugar',
             estado TEXT CHECK(estado IN ('Pendiente', 'En preparación', 'Servido', 'Pagado')) NOT NULL,
             FOREIGN KEY (mesa_id) REFERENCES Mesas(id)
         );

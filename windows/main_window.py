@@ -1,15 +1,17 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QAction, QWidget
-
 import sys
-
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QAction, QMessageBox, QDialog
 from windows.gestionar_menu_dialog import GestionarMenuDialog
 from windows.interfaz_mesas import InterfazMesas
+from controllers import crear_comanda_para_llevar
+from windows.detalle_comanda_para_llevar_dialog import DetalleComandaParaLlevarDialog
+from windows.ver_comandas_dialog import VerComandasDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Gestión de Comandas")
         self.setGeometry(100, 100, 400, 300)
+
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout_principal = QVBoxLayout()
@@ -63,24 +65,29 @@ class MainWindow(QMainWindow):
         menu_opciones.addAction(accion_gestionar_menu)
 
     def dine_in(self):
-        # Aquí puedes agregar la lógica para gestionar las comandas de "Comer en el lugar"
-        print("Comer en el lugar seleccionado")
+        self.ventana_mesas = InterfazMesas()
+        self.ventana_mesas.show()
 
     def take_away(self):
-        # Aquí puedes agregar la lógica para gestionar las comandas de "Para llevar"
-        print("Para llevar seleccionado")
+        comanda_id = crear_comanda_para_llevar()
+
+        dialog = DetalleComandaParaLlevarDialog(comanda_id, self)
+        dialog.exec_()
 
     def ver_mesas(self):
         self.ventana_mesas = InterfazMesas()
         self.ventana_mesas.show()
 
+    from windows.ver_comandas_dialog import VerComandasDialog
+
     def ver_comandas(self):
-        # Aquí puedes agregar la lógica para ver las comandas
-        print("Ver Comandas seleccionado")
+        dialog = VerComandasDialog(self)
+        dialog.exec_()
 
     def gestionar_menu(self):
         self.ventana_menu = GestionarMenuDialog(self)
         self.ventana_menu.exec_()
+
 
 def iniciar_interfaz():
     app = QApplication(sys.argv)

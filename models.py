@@ -35,11 +35,12 @@ class Ingrediente:
         return f"{self.nombre}: {self.stock} {self.unidad} (Mín: {self.stock_minimo})"
 
 class Comanda:
-    def __init__(self, id, mesa_id, fecha_hora, estado):
+    def __init__(self, id, mesa_id, fecha_hora, estado, tipo="Comer en el lugar"):
         self.id = id
         self.mesa_id = mesa_id
         self.fecha_hora = fecha_hora
         self.estado = estado
+        self.tipo = tipo
         self.detalles = []
 
     def agregar_detalle(self, detalle):
@@ -48,11 +49,19 @@ class Comanda:
     def calcular_total(self):
         return sum(detalle.subtotal for detalle in self.detalles)
 
+    def calcular_total_con_impuestos(self, impuesto=0.1):
+        total = self.calcular_total()
+        return total + (total * impuesto)
+
+    def esta_cerrada(self):
+        return self.estado.lower() == "pagado"
+
     def __repr__(self):
-        return f"Comanda {self.id} - Mesa {self.mesa_id} ({self.estado})"
+        tipo_info = f" - Tipo: {self.tipo}" if self.tipo else ""
+        return f"Comanda {self.id} - Mesa {self.mesa_id} ({self.estado}){tipo_info}"
 
 class DetalleComanda:
-    def __init__(self, id, comanda_id, producto_id, producto_nombre, cantidad, subtotal, notas, ingredientes_excluidos, ingredientes_agregados):
+    def __init__(self, id, comanda_id, producto_id, producto_nombre, cantidad, subtotal, notas="", ingredientes_excluidos="", ingredientes_agregados=""):
         self.id = id
         self.comanda_id = comanda_id
         self.producto_id = producto_id

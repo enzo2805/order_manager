@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QFormLayout, QInputDialog
 
-from controllers import agregar_producto_a_comanda, cambiar_estado_mesa, obtener_comandas_por_mesa
+from controllers import agregar_producto_a_comanda, cambiar_estado_comanda, cambiar_estado_mesa, obtener_comandas_por_mesa
 from windows.agregar_producto_comanda_dialog import AgregarProductoComandaDialog
 
 class DetalleMesaDialog(QDialog):
@@ -101,6 +101,30 @@ class DetalleMesaDialog(QDialog):
 
     def cobrar(self):
         total = sum(float(self.table.item(row, 4).text().replace('$', '')) for row in range(self.table.rowCount()))
-        QMessageBox.information(self, "Cobrar", f"El total a cobrar es: ${total:.2f}")
-        cambiar_estado_mesa(self.mesa.id, "Libre")
-        self.accept()
+
+        monto_pagado, ok = QInputDialog.getDouble(
+            self,
+            "Cobrar",
+            f"El total a cobrar es: ${total:.2f}\nIngrese el monto pagado:",
+            decimals=2
+        )
+
+        if ok:
+            if monto_pagado < total:
+                QMessageBox.warning(self, "Monto Insuficiente", "El monto ingresado es menor que el total a cobrar.")
+                return
+
+            vuelto = monto_pagado - total
+
+            QMessageBox.information(
+                self,
+                "Cobro Exitoso",
+                f"Total: ${total:.2f}\nMonto Pagado: ${monto_pagado:.2f}\nVuelto: ${vuelto:.2f}"
+            )
+
+            for comanda in self.comandas:
+                cambiar_estado_comanda(comanda.id, "Pagado")
+
+            cambiar_estado_mesa(self.mesa.id, "Libre")
+
+            self.accept()
