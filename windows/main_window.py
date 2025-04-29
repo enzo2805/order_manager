@@ -5,7 +5,7 @@ from windows.interfaz_mesas import InterfazMesas
 from controllers import crear_comanda_para_llevar
 from windows.detalle_comanda_para_llevar_dialog import DetalleComandaParaLlevarDialog
 from windows.ver_comandas_dialog import VerComandasDialog
-
+from windows.gestionar_ingredientes_dialog import GestionarIngredientesDialog
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -15,10 +15,6 @@ class MainWindow(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout_principal = QVBoxLayout()
-
-        self.boton_dine_in = QPushButton("Comer en el lugar")
-        self.boton_dine_in.clicked.connect(self.dine_in)
-        self.layout_principal.addWidget(self.boton_dine_in)
 
         self.boton_take_away = QPushButton("Para llevar")
         self.boton_take_away.clicked.connect(self.take_away)
@@ -31,6 +27,10 @@ class MainWindow(QMainWindow):
         self.boton_ver_comandas = QPushButton("Ver Comandas")
         self.boton_ver_comandas.clicked.connect(self.ver_comandas)
         self.layout_principal.addWidget(self.boton_ver_comandas)
+        
+        self.boton_gestionar_ingredientes = QPushButton("Gestionar Ingredientes")
+        self.boton_gestionar_ingredientes.clicked.connect(self.gestionar_ingredientes)
+        self.layout_principal.addWidget(self.boton_gestionar_ingredientes)
 
         self.boton_gestionar_menu = QPushButton("Gestionar Menú")
         self.boton_gestionar_menu.clicked.connect(self.gestionar_menu)
@@ -78,8 +78,6 @@ class MainWindow(QMainWindow):
         self.ventana_mesas = InterfazMesas()
         self.ventana_mesas.show()
 
-    from windows.ver_comandas_dialog import VerComandasDialog
-
     def ver_comandas(self):
         dialog = VerComandasDialog(self)
         dialog.exec_()
@@ -87,6 +85,10 @@ class MainWindow(QMainWindow):
     def gestionar_menu(self):
         self.ventana_menu = GestionarMenuDialog(self)
         self.ventana_menu.exec_()
+    
+    def gestionar_ingredientes(self):
+        dialog = GestionarIngredientesDialog(self)
+        dialog.exec_()
 
 
 def iniciar_interfaz():

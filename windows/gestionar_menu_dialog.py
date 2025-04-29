@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QDialog, QInputDialog, QTa
 from PyQt5.QtCore import Qt, QByteArray
 from PyQt5.QtGui import QPixmap
 from controllers import obtener_todos_los_productos, agregar_producto, eliminar_producto, editar_producto
+from windows.gestionar_recetas_dialog import GestionarRecetasDialog
 
 class GestionarMenuDialog(QDialog):
     def __init__(self, parent=None):
@@ -32,9 +33,25 @@ class GestionarMenuDialog(QDialog):
         self.boton_eliminar.clicked.connect(self.eliminar_producto)
         botones_layout.addWidget(self.boton_eliminar)
 
+        self.boton_recetas = QPushButton("Gestionar Recetas")
+        self.boton_recetas.clicked.connect(self.gestionar_recetas)
+        botones_layout.addWidget(self.boton_recetas)
+
         layout.addLayout(botones_layout)
         self.setLayout(layout)
 
+    def gestionar_recetas(self):
+        fila_seleccionada = self.table.currentRow()
+        if fila_seleccionada == -1:
+            QMessageBox.warning(self, "Gestionar Recetas", "Por favor, seleccione un producto para gestionar sus recetas.")
+            return
+
+        producto_id = int(self.table.item(fila_seleccionada, 0).text())
+        nombre_producto = self.table.item(fila_seleccionada, 1).text()
+
+        dialog = GestionarRecetasDialog(producto_id, nombre_producto, self)
+        dialog.exec_()
+        
     def actualizar_menu(self):
         productos = obtener_todos_los_productos()
         self.table.setRowCount(len(productos))
@@ -44,7 +61,6 @@ class GestionarMenuDialog(QDialog):
             self.table.setItem(row, 2, QTableWidgetItem(f"${producto.precio:.2f}"))
             self.table.setItem(row, 3, QTableWidgetItem(producto.categoria))
             
-            # Mostrar la imagen
             if producto.imagen:
                 pixmap = QPixmap()
                 pixmap.loadFromData(QByteArray(producto.imagen))
@@ -62,25 +78,21 @@ class GestionarMenuDialog(QDialog):
                 categorias = ["Entrada", "Plato principal", "Desayuno/Merienda", "Postre", "Alcohol", "No alcoholico", "Extra"]
                 categoria, ok = QInputDialog.getItem(self, "Agregar Producto", "Seleccione la categoría del producto:", categorias, 0, False)
                 if ok and categoria:
-                    # Seleccionar imagen
                     imagen, _ = QFileDialog.getOpenFileName(self, "Seleccionar Imagen", "", "Imágenes (*.png *.jpg *.jpeg *.bmp)")
                     agregar_producto(nombre, precio, categoria, imagen)
                     self.actualizar_menu()
 
     def editar_producto(self):
-        # Obtener el producto seleccionado
         fila_seleccionada = self.table.currentRow()
         if fila_seleccionada == -1:
             QMessageBox.warning(self, "Editar Producto", "Por favor, seleccione un producto para editar.")
             return
 
-        # Obtener los datos del producto seleccionado
         producto_id = int(self.table.item(fila_seleccionada, 0).text())
         nombre_actual = self.table.item(fila_seleccionada, 1).text()
         precio_actual = float(self.table.item(fila_seleccionada, 2).text().replace("$", ""))
         categoria_actual = self.table.item(fila_seleccionada, 3).text()
 
-        # Pedir nuevos datos al usuario
         nombre, ok = QInputDialog.getText(self, "Editar Producto", "Ingrese el nuevo nombre del producto:", text=nombre_actual)
         if not ok or not nombre:
             return
@@ -94,13 +106,10 @@ class GestionarMenuDialog(QDialog):
         if not ok:
             return
 
-        # Seleccionar una nueva imagen (opcional)
         imagen, _ = QFileDialog.getOpenFileName(self, "Seleccionar Nueva Imagen (Opcional)", "", "Imágenes (*.png *.jpg *.jpeg *.bmp)")
 
-        # Actualizar el producto en la base de datos
         editar_producto(producto_id, nombre, precio, categoria, imagen if imagen else None)
 
-        # Actualizar la tabla
         self.actualizar_menu()
 
     def eliminar_producto(self):

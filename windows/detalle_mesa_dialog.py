@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QFormLayout, QInputDialog
 
 from controllers import agregar_producto_a_comanda, cambiar_estado_comanda, cambiar_estado_mesa, obtener_comandas_por_mesa
+from models import Comanda
 from windows.agregar_producto_comanda_dialog import AgregarProductoComandaDialog
 
 class DetalleMesaDialog(QDialog):
@@ -36,16 +37,14 @@ class DetalleMesaDialog(QDialog):
 
         layout.addLayout(botones_layout)
         
-        # Tabla de comandas
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["ID Comanda", "Producto", "Cantidad", "Estado", "Subtotal"])
+        self.table.setColumnCount(8)
+        self.table.setHorizontalHeaderLabels(["ID Comanda", "Producto", "Cantidad", "Estado", "Notas", "Ing. Excluidos", "Ing. Agregados", "Subtotal"])
         
         self.actualizar_tabla_comandas()
 
         layout.addWidget(self.table)
 
-        # Botones para agregar productos y cobrar
         botones_cobrar_layout = QHBoxLayout()
         self.boton_agregar_producto = QPushButton("Agregar Producto")
         self.boton_agregar_producto.clicked.connect(self.agregar_producto)
@@ -73,14 +72,20 @@ class DetalleMesaDialog(QDialog):
         if dialog.exec_() == QDialog.Accepted:
             producto, cantidad, notas = dialog.obtener_seleccion()
             if producto:
-                agregar_producto_a_comanda(self.mesa.id, producto.id, cantidad, notas)
-                self.actualizar_tabla_comandas()
+                comanda_activa = next((comanda for comanda in self.comandas if comanda.estado == "Pendiente"), None)
 
-    def actualizar_comanda(self, producto, cantidad, notas):
-        # Lógica para actualizar la comanda con el producto, la cantidad y las notas seleccionados
-        # Aquí puedes agregar el producto a la comanda y actualizar la tabla de comandas
-        agregar_producto_a_comanda(self.mesa.id, producto.id, cantidad, notas)
-        # Volver a obtener las comandas y sus detalles
+                if not comanda_activa:
+                    from controllers import crear_comanda
+                    comanda_id = crear_comanda(self.mesa.id)
+                    comanda_activa = Comanda(comanda_id, self.mesa.id, None, "Pendiente", "Comer en el lugar")
+                    self.comandas.append(comanda_activa)
+
+                from controllers import agregar_producto_a_comanda
+                agregar_producto_a_comanda(comanda_activa.id, producto.id, cantidad, notas)
+
+                self.actualizar_comandas()
+
+    def actualizar_comandas(self):
         self.comandas = obtener_comandas_por_mesa(self.mesa.id)
         self.actualizar_tabla_comandas()
 
@@ -90,41 +95,65 @@ class DetalleMesaDialog(QDialog):
             detalles.extend(comanda.detalles)
         
         self.table.setRowCount(len(detalles))
-        row = 0
-        for detalle in detalles:
+        for row, detalle in enumerate(detalles):
             self.table.setItem(row, 0, QTableWidgetItem(str(detalle.comanda_id)))
             self.table.setItem(row, 1, QTableWidgetItem(detalle.producto_nombre))
             self.table.setItem(row, 2, QTableWidgetItem(str(detalle.cantidad)))
-            self.table.setItem(row, 3, QTableWidgetItem(detalle.notas))
-            self.table.setItem(row, 4, QTableWidgetItem(f"${detalle.subtotal:.2f}"))
-            row += 1
+            self.table.setItem(row, 3, QTableWidgetItem(detalle.estado))
+            self.table.setItem(row, 4, QTableWidgetItem(detalle.notas if detalle.notas else ""))
+            self.table.setItem(row, 5, QTableWidgetItem(detalle.ingredientes_excluidos if detalle.ingredientes_excluidos else ""))
+            self.table.setItem(row, 6, QTableWidgetItem(detalle.ingredientes_agregados if detalle.ingredientes_agregados else ""))
+            self.table.setItem(row, 7, QTableWidgetItem(f"${detalle.subtotal:.2f}"))
 
     def cobrar(self):
-        total = sum(float(self.table.item(row, 4).text().replace('$', '')) for row in range(self.table.rowCount()))
+        total = sum(float(self.table.item(row, 7).text().replace('$', '')) for row in range(self.table.rowCount()))
 
-        monto_pagado, ok = QInputDialog.getDouble(
+        metodos_pago = ["Efectivo", "Tarjeta", "Mercado Pago"]
+        metodo_pago, ok = QInputDialog.getItem(
             self,
-            "Cobrar",
-            f"El total a cobrar es: ${total:.2f}\nIngrese el monto pagado:",
-            decimals=2
+            "Método de Pago",
+            "Seleccione el método de pago:",
+            metodos_pago,
+            editable=False
         )
 
-        if ok:
+        if not ok:
+            return
+
+        if metodo_pago == "Efectivo":
+            monto_pagado, ok = QInputDialog.getDouble(
+                self,
+                "Cobrar",
+                f"El total a cobrar es: ${total:.2f}\nIngrese el monto pagado:",
+                decimals=2
+            )
+
+            if not ok:
+                return 
+
             if monto_pagado < total:
                 QMessageBox.warning(self, "Monto Insuficiente", "El monto ingresado es menor que el total a cobrar.")
                 return
-
+            
             vuelto = monto_pagado - total
 
             QMessageBox.information(
                 self,
                 "Cobro Exitoso",
-                f"Total: ${total:.2f}\nMonto Pagado: ${monto_pagado:.2f}\nVuelto: ${vuelto:.2f}"
+                f"Método de Pago: {metodo_pago}\nTotal: ${total:.2f}\nMonto Pagado: ${monto_pagado:.2f}\nVuelto: ${vuelto:.2f}"
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Cobro Exitoso",
+                f"Método de Pago: {metodo_pago}\nTotal: ${total:.2f}"
             )
 
-            for comanda in self.comandas:
-                cambiar_estado_comanda(comanda.id, "Pagado")
+        for comanda in self.comandas:
+            cambiar_estado_comanda(comanda.id, "Pagado", metodo_pago)
 
-            cambiar_estado_mesa(self.mesa.id, "Libre")
+        cambiar_estado_mesa(self.mesa.id, "Libre")
 
-            self.accept()
+        self.actualizar_comandas()
+
+        self.accept()

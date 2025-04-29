@@ -31,13 +31,23 @@ def crear_tablas():
             imagen TEXT,
             categoria TEXT NOT NULL CHECK(categoria IN ('Entrada', 'Plato principal', 'Desayuno/Merienda', 'Postre', 'Alchohol', 'No alcoholico', 'Extra')),
         );
+                             
+        CREATE TABLE IF NOT EXISTS Receta (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            producto_id INTEGER NOT NULL,
+            ingrediente_id INTEGER NOT NULL,
+            cantidad_necesaria REAL NOT NULL,
+            FOREIGN KEY (producto_id) REFERENCES Productos(id),
+            FOREIGN KEY (ingrediente_id) REFERENCES Ingredientes(id)
+        );
 
         CREATE TABLE IF NOT EXISTS Comandas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             mesa_id INTEGER,
             fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             tipo TEXT DEFAULT 'Comer en el lugar',
-            estado TEXT CHECK(estado IN ('Pendiente', 'En preparación', 'Servido', 'Pagado')) NOT NULL,
+            estado TEXT CHECK(estado IN ('Pendiente', 'En preparación', 'Listo', 'Pagado')) NOT NULL,
+            metodo_pago TEXT DEFAULT NULL,
             FOREIGN KEY (mesa_id) REFERENCES Mesas(id)
         );
 
@@ -50,6 +60,7 @@ def crear_tablas():
             notas TEXT,
             ingredientes_excluidos TEXT,
             ingredientes_agregados TEXT,
+            estado TEXT CHECK(estado IN ('Pendiente', 'En preparación', 'Listo')) DEFAULT 'Pendiente',
             FOREIGN KEY (comanda_id) REFERENCES Comandas(id),
             FOREIGN KEY (producto_id) REFERENCES Productos(id)
         );
@@ -65,43 +76,6 @@ def crear_tablas():
         );
         """)
         conn.commit()
-
-def insertar_mesa(numero, estado):
-    with conectar_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO Mesas (numero, estado) VALUES (?, ?)", (numero, estado))
-        conn.commit()
-
-def insertar_producto(nombre, precio):
-    with conectar_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO Productos (nombre, precio) VALUES (?, ?)", (nombre, precio))
-        conn.commit()
-
-def insertar_ingrediente(nombre, stock, stock_minimo, unidad):
-    with conectar_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO Ingredientes (nombre, stock, stock_minimo, unidad) VALUES (?, ?, ?, ?)", 
-                       (nombre, stock, stock_minimo, unidad))
-        conn.commit()
-
-def obtener_productos():
-    with conectar_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Productos")
-        return cursor.fetchall()
-
-def obtener_mesas():
-    with conectar_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Mesas")
-        return cursor.fetchall()
-
-def obtener_ingredientes():
-    with conectar_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Ingredientes")
-        return cursor.fetchall()
 
 if __name__ == "__main__":
     crear_tablas()

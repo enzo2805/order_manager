@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QMessageBox
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QMessageBox, QInputDialog
 from controllers import agregar_producto_a_comanda, obtener_detalles_comanda, cambiar_estado_comanda
 from windows.agregar_producto_comanda_dialog import AgregarProductoComandaDialog
 
@@ -51,6 +51,12 @@ class DetalleComandaParaLlevarDialog(QDialog):
                 QMessageBox.information(self, "Producto Agregado", f"Producto '{producto.nombre}' agregado a la comanda.")
 
     def finalizar_comanda(self):
-        cambiar_estado_comanda(self.comanda_id, "Pagado")
-        QMessageBox.information(self, "Comanda Finalizada", "La comanda ha sido finalizada.")
+        cambiar_estado_comanda(self.comanda_id, "Pendiente")
+
+        QMessageBox.information(
+            self,
+            "Comanda Finalizada",
+            "La comanda ha sido finalizada y marcada como 'Pendiente'. Ahora está lista para ser tomada por un cocinero."
+        )
+
         self.accept()
