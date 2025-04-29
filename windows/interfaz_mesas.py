@@ -1,7 +1,7 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QPushButton, QCheckBox, QMenu, QAction, QInputDialog, QWidget
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QPushButton, QCheckBox, QMenu, QAction, QInputDialog, QWidget, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
-from controllers import obtener_todas_las_mesas, cambiar_estado_mesa, guardar_posicion_mesa, agregar_mesa, eliminar_mesa, obtener_comandas_por_mesa
+from controllers import cambiar_mesa_comanda, obtener_todas_las_mesas, cambiar_estado_mesa, guardar_posicion_mesa, agregar_mesa, eliminar_mesa, obtener_comandas_por_mesa
 from windows.detalle_mesa_dialog import DetalleMesaDialog
 
 
@@ -126,6 +126,10 @@ class InterfazMesas(QMainWindow):
         cambiar_estado_reservada.triggered.connect(lambda: self.reservar_mesa(mesa))
         menu.addAction(cambiar_estado_reservada)
 
+        mover_comanda = QAction("Mover Comanda", self)
+        mover_comanda.triggered.connect(lambda: self.mover_comanda(mesa))
+        menu.addAction(mover_comanda)
+
         menu.exec_(QCursor.pos())
 
     def cambiar_estado(self, mesa, nuevo_estado):
@@ -176,3 +180,38 @@ class InterfazMesas(QMainWindow):
         if ok:
             eliminar_mesa(mesa_id)
             self.actualizar_mesas()
+    
+    def mover_comanda(self, mesa_origen):
+        mesas_libres = [mesa for mesa in obtener_todas_las_mesas() if mesa.estado == "Libre"]
+
+        if not mesas_libres:
+            QMessageBox.warning(self, "Mover Comanda", "No hay mesas libres disponibles.")
+            return
+
+        opciones = [f"Mesa {mesa.numero}" for mesa in mesas_libres]
+        mesa_seleccionada, ok = QInputDialog.getItem(
+            self,
+            "Mover Comanda",
+            "Seleccione una mesa libre para mover la comanda:",
+            opciones,
+            editable=False
+        )
+
+        if not ok or not mesa_seleccionada:
+            return
+
+        numero_mesa = int(mesa_seleccionada.split(" ")[1])
+        mesa_destino = next((mesa for mesa in mesas_libres if mesa.numero == numero_mesa), None)
+
+        if not mesa_destino:
+            QMessageBox.warning(self, "Mover Comanda", "No se pudo encontrar la mesa seleccionada.")
+            return
+
+        for comanda in obtener_comandas_por_mesa(mesa_origen.id):
+            cambiar_mesa_comanda(comanda.id, mesa_destino.id)
+
+        cambiar_estado_mesa(mesa_origen.id, "Libre")
+        cambiar_estado_mesa(mesa_destino.id, "Ocupada")
+
+        QMessageBox.information(self, "Mover Comanda", f"Las comandas de la Mesa {mesa_origen.numero} se han movido a la Mesa {mesa_destino.numero}.")
+        self.actualizar_mesas()

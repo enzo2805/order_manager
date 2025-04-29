@@ -82,7 +82,6 @@ def obtener_todos_los_productos():
 def agregar_producto(nombre, precio, categoria, imagen=None):
     with conectar_db() as conn:
         cursor = conn.cursor()
-        # Leer la imagen como binario si se proporciona
         imagen_blob = None
         if imagen:
             with open(imagen, "rb") as file:
@@ -96,7 +95,6 @@ def agregar_producto(nombre, precio, categoria, imagen=None):
 def editar_producto(producto_id, nombre, precio, categoria, imagen=None):
     with conectar_db() as conn:
         cursor = conn.cursor()
-        # Leer la imagen como binario si se proporciona
         imagen_blob = None
         if imagen:
             with open(imagen, "rb") as file:
@@ -210,7 +208,6 @@ def actualizar_estado_comanda(comanda_id):
     with conectar_db() as conn:
         cursor = conn.cursor()
 
-        # Verificar los estados de los detalles
         cursor.execute("""
             SELECT estado
             FROM DetallesComanda
@@ -218,7 +215,6 @@ def actualizar_estado_comanda(comanda_id):
         """, (comanda_id,))
         estados = [row[0] for row in cursor.fetchall()]
 
-        # Determinar el estado de la comanda
         if all(estado == "Listo" for estado in estados):
             nuevo_estado = "Listo"
         elif any(estado == "En preparación" for estado in estados):
@@ -226,7 +222,6 @@ def actualizar_estado_comanda(comanda_id):
         else:
             nuevo_estado = "Pendiente"
 
-        # Actualizar el estado de la comanda
         cursor.execute("""
             UPDATE Comandas
             SET estado = ?
@@ -393,3 +388,38 @@ def obtener_todos_los_ingredientes():
         cursor = conn.cursor()
         cursor.execute("SELECT id, nombre FROM Ingredientes")
         return cursor.fetchall()
+    
+def cambiar_mesa_comanda(comanda_id, nueva_mesa_id):
+    with conectar_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT mesa_id FROM Comandas WHERE id = ?", (comanda_id,))
+        mesa_actual_id = cursor.fetchone()[0]
+
+        cursor.execute("""
+            UPDATE Comandas
+            SET mesa_id = ?
+            WHERE id = ?
+        """, (nueva_mesa_id, comanda_id))
+
+        cursor.execute("""
+            UPDATE Mesas
+            SET estado = 'Ocupada'
+            WHERE id = ?
+        """, (nueva_mesa_id,))
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM Comandas
+            WHERE mesa_id = ? AND estado != 'Pagado'
+        """, (mesa_actual_id,))
+        comandas_restantes = cursor.fetchone()[0]
+
+        if comandas_restantes == 0:
+            cursor.execute("""
+                UPDATE Mesas
+                SET estado = 'Libre'
+                WHERE id = ?
+            """, (mesa_actual_id,))
+
+        conn.commit()
