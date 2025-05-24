@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QDialog, QInputDialog, QTableWidget, QTableWidgetItem, QHBoxLayout, QMessageBox, QFileDialog
 from PyQt5.QtCore import Qt, QByteArray
 from PyQt5.QtGui import QPixmap
-from controllers import obtener_todos_los_productos, agregar_producto, eliminar_producto, editar_producto
+from api_client import obtener_productos, agregar_producto, editar_producto, eliminar_producto
 from windows.gestionar_recetas_dialog import GestionarRecetasDialog
 
 class GestionarMenuDialog(QDialog):
@@ -53,17 +53,17 @@ class GestionarMenuDialog(QDialog):
         dialog.exec_()
         
     def actualizar_menu(self):
-        productos = obtener_todos_los_productos()
+        productos = obtener_productos()
         self.table.setRowCount(len(productos))
         for row, producto in enumerate(productos):
-            self.table.setItem(row, 0, QTableWidgetItem(str(producto.id)))
-            self.table.setItem(row, 1, QTableWidgetItem(producto.nombre))
-            self.table.setItem(row, 2, QTableWidgetItem(f"${producto.precio:.2f}"))
-            self.table.setItem(row, 3, QTableWidgetItem(producto.categoria))
+            self.table.setItem(row, 0, QTableWidgetItem(str(producto["id"])))
+            self.table.setItem(row, 1, QTableWidgetItem(producto["nombre"]))
+            self.table.setItem(row, 2, QTableWidgetItem(f"${producto['precio']:.2f}"))
+            self.table.setItem(row, 3, QTableWidgetItem(producto["categoria"]))
             
-            if producto.imagen:
+            if producto["imagen"]:
                 pixmap = QPixmap()
-                pixmap.loadFromData(QByteArray(producto.imagen))
+                pixmap.loadFromData(QByteArray.fromBase64(producto["imagen"].encode('utf-8')))
                 item_imagen = QTableWidgetItem()
                 item_imagen.setData(Qt.DecorationRole, pixmap.scaled(50, 50, Qt.KeepAspectRatio))
                 self.table.setItem(row, 4, item_imagen)
@@ -113,7 +113,13 @@ class GestionarMenuDialog(QDialog):
         self.actualizar_menu()
 
     def eliminar_producto(self):
-        producto_id, ok = QInputDialog.getInt(self, "Eliminar Producto", "Ingrese el ID del producto a eliminar:")
-        if ok:
+        fila_seleccionada = self.table.currentRow()
+        if fila_seleccionada == -1:
+            QMessageBox.warning(self, "Eliminar Producto", "Por favor, seleccione un producto para eliminar.")
+            return
+
+        producto_id = int(self.table.item(fila_seleccionada, 0).text())
+        respuesta = QMessageBox.question(self, "Eliminar Producto", "¿Está seguro de que desea eliminar este producto?", QMessageBox.Yes | QMessageBox.No)
+        if respuesta == QMessageBox.Yes:
             eliminar_producto(producto_id)
             self.actualizar_menu()

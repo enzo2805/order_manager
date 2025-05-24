@@ -2,7 +2,6 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QAction, QMessageBox, QDialog
 from windows.gestionar_menu_dialog import GestionarMenuDialog
 from windows.interfaz_mesas import InterfazMesas
-from controllers import crear_comanda_para_llevar
 from windows.detalle_comanda_para_llevar_dialog import DetalleComandaParaLlevarDialog
 from windows.ver_comandas_dialog import VerComandasDialog
 from windows.gestionar_ingredientes_dialog import GestionarIngredientesDialog
@@ -69,9 +68,7 @@ class MainWindow(QMainWindow):
         self.ventana_mesas.show()
 
     def take_away(self):
-        comanda_id = crear_comanda_para_llevar()
-
-        dialog = DetalleComandaParaLlevarDialog(comanda_id, self)
+        dialog = DetalleComandaParaLlevarDialog(self)
         dialog.exec_()
 
     def ver_mesas(self):

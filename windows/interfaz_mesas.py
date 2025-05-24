@@ -1,7 +1,18 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QPushButton, QCheckBox, QMenu, QAction, QInputDialog, QWidget, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QPushButton, QCheckBox, QMenu, QAction, QInputDialog, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
-from controllers import cambiar_mesa_comanda, obtener_todas_las_mesas, cambiar_estado_mesa, guardar_posicion_mesa, agregar_mesa, eliminar_mesa, obtener_comandas_por_mesa
+from api_client import (
+    crear_mesa,
+    eliminar_mesa,
+    guardar_posicion_mesa,
+    obtener_mesas,
+    cambiar_estado_mesa,
+    obtener_comandas_por_mesa,
+    crear_comanda,
+    cambiar_mesa_comanda,
+    obtener_todas_las_comandas_para_mesas
+)
+from models import Mesa
 from windows.detalle_mesa_dialog import DetalleMesaDialog
 
 
@@ -43,15 +54,26 @@ class InterfazMesas(QMainWindow):
     def actualizar_mesas(self):
         self.limpiar_layout(self.mesas_container)
         self.mesas_widgets = {}
-        mesas = obtener_todas_las_mesas()
+
+        mesas = obtener_mesas()
+        comandas = obtener_todas_las_comandas_para_mesas()
+
+        comandas_por_mesa = {}
+        for comanda in comandas:
+            mesa_id = comanda["mesa_id"]
+            if mesa_id not in comandas_por_mesa:
+                comandas_por_mesa[mesa_id] = []
+            comandas_por_mesa[mesa_id].append(comanda)
+
         for mesa in mesas:
-            comandas = obtener_comandas_por_mesa(mesa.id)
-            if any(comanda.estado != 'Pagado' for comanda in comandas):
-                mesa.estado = "Ocupada"
+            mesa_comandas = comandas_por_mesa.get(mesa["id"], [])
+            if any(comanda["estado"] != 'Pagado' for comanda in mesa_comandas):
+                mesa["estado"] = "Ocupada"
+
             btn = self.crear_boton_mesa(mesa)
-            self.mesas_widgets[mesa.id] = btn
+            self.mesas_widgets[mesa["id"]] = btn
             btn.setParent(self.mesas_container)
-            btn.move(mesa.pos_x, mesa.pos_y)
+            btn.move(mesa["pos_x"], mesa["pos_y"])
             btn.show()
 
     def limpiar_layout(self, layout):
@@ -60,10 +82,10 @@ class InterfazMesas(QMainWindow):
                 widget.setParent(None)
 
     def crear_boton_mesa(self, mesa):
-        btn = QPushButton(f"Mesa {mesa.numero}\n{mesa.estado}")
-        if mesa.estado == "Reservada":
-            btn.setText(f"Mesa {mesa.numero}\n{mesa.estado}\nReservada a: {mesa.reservada_a}")
-        btn.setStyleSheet(self.obtener_color_estado(mesa.estado))
+        btn = QPushButton(f"Mesa {mesa['numero']}\n{mesa['estado']}")
+        if mesa["estado"] == "Reservada":
+            btn.setText(f"Mesa {mesa['numero']}\n{mesa['estado']}\nReservada a: {mesa['reservada_a']}")
+        btn.setStyleSheet(self.obtener_color_estado(mesa["estado"]))
         btn.setFixedSize(80, 80)
         btn.setCheckable(self.modo_edicion)
         
@@ -83,7 +105,7 @@ class InterfazMesas(QMainWindow):
             btn.mouseReleaseEvent = lambda event, b=btn: self.finalizar_mover(event, b)
             btn.setCursor(Qt.OpenHandCursor)
         else:
-            btn.setStyleSheet(self.obtener_color_estado(mesa.estado))
+            btn.setStyleSheet(self.obtener_color_estado(mesa["estado"]))
 
     def obtener_color_estado(self, estado):
         estilos_estado = {
@@ -99,21 +121,6 @@ class InterfazMesas(QMainWindow):
 
     def mostrar_menu_contextual(self, pos, boton, mesa):
         menu = QMenu(self)
-        forma_menu = QMenu("Cambiar Forma", self)
-        
-        estilos_forma = {
-            "Cuadrada": "background-color: lightgray;",
-            "Redonda": "border-radius: 40px; background-color: lightgray;",
-            "Rectangular": "width: 100px; background-color: lightgray;"
-        }
-        
-        for forma, estilo in estilos_forma.items():
-            accion = QAction(forma, self)
-            accion.triggered.connect(lambda checked=False, s=estilo: boton.setStyleSheet(s))
-            forma_menu.addAction(accion)
-        
-        menu.addMenu(forma_menu)
-
         cambiar_estado_libre = QAction("Libre", self)
         cambiar_estado_libre.triggered.connect(lambda: self.cambiar_estado(mesa, "Libre"))
         menu.addAction(cambiar_estado_libre)
@@ -133,16 +140,24 @@ class InterfazMesas(QMainWindow):
         menu.exec_(QCursor.pos())
 
     def cambiar_estado(self, mesa, nuevo_estado):
-        cambiar_estado_mesa(mesa.id, nuevo_estado)
+        cambiar_estado_mesa(mesa["id"], nuevo_estado)
         self.actualizar_mesas()
 
     def reservar_mesa(self, mesa):
         nombre, ok = QInputDialog.getText(self, "Reservar Mesa", "Ingrese el nombre de la persona:")
         if ok and nombre:
-            cambiar_estado_mesa(mesa.id, "Reservada", nombre)
+            cambiar_estado_mesa(mesa["id"], "Reservada", nombre)
             self.actualizar_mesas()
 
-    def mostrar_detalle_mesa(self, mesa):
+    def mostrar_detalle_mesa(self, mesa_dict):
+        mesa = Mesa(
+            id=mesa_dict["id"],
+            numero=mesa_dict["numero"],
+            estado=mesa_dict["estado"],
+            reservada_a=mesa_dict.get("reservada_a", None),
+            pos_x=mesa_dict["pos_x"],
+            pos_y=mesa_dict["pos_y"]
+        )
         comandas = obtener_comandas_por_mesa(mesa.id)
         dialog = DetalleMesaDialog(mesa, comandas, self)
         dialog.exec_()
@@ -169,26 +184,28 @@ class InterfazMesas(QMainWindow):
         for mesa_id, boton in self.mesas_widgets.items():
             nueva_posicion = boton.pos()
             guardar_posicion_mesa(mesa_id, nueva_posicion.x(), nueva_posicion.y())
-        print("Cambios guardados")
+        QMessageBox.information(self, "Guardado", "Posiciones de las mesas guardadas correctamente.")
 
     def crear_mesa(self):
-        agregar_mesa()
+        crear_mesa()
         self.actualizar_mesas()
-
+        
     def eliminar_mesa(self):
         mesa_id, ok = QInputDialog.getInt(self, "Eliminar Mesa", "Ingrese el ID de la mesa a eliminar:")
         if ok:
             eliminar_mesa(mesa_id)
+            QMessageBox.information(self, "Mesa eliminada", f"Mesa con ID {mesa_id} eliminada correctamente.")
+            
             self.actualizar_mesas()
-    
+
     def mover_comanda(self, mesa_origen):
-        mesas_libres = [mesa for mesa in obtener_todas_las_mesas() if mesa.estado == "Libre"]
+        mesas_libres = [mesa for mesa in obtener_mesas() if mesa["estado"] == "Libre"]
 
         if not mesas_libres:
             QMessageBox.warning(self, "Mover Comanda", "No hay mesas libres disponibles.")
             return
 
-        opciones = [f"Mesa {mesa.numero}" for mesa in mesas_libres]
+        opciones = [f"Mesa {mesa['numero']}" for mesa in mesas_libres]
         mesa_seleccionada, ok = QInputDialog.getItem(
             self,
             "Mover Comanda",
@@ -201,17 +218,17 @@ class InterfazMesas(QMainWindow):
             return
 
         numero_mesa = int(mesa_seleccionada.split(" ")[1])
-        mesa_destino = next((mesa for mesa in mesas_libres if mesa.numero == numero_mesa), None)
+        mesa_destino = next((mesa for mesa in mesas_libres if mesa["numero"] == numero_mesa), None)
 
         if not mesa_destino:
             QMessageBox.warning(self, "Mover Comanda", "No se pudo encontrar la mesa seleccionada.")
             return
 
-        for comanda in obtener_comandas_por_mesa(mesa_origen.id):
-            cambiar_mesa_comanda(comanda.id, mesa_destino.id)
+        for comanda in obtener_comandas_por_mesa(mesa_origen["id"]):
+            cambiar_mesa_comanda(comanda["id"], mesa_destino["id"])
 
-        cambiar_estado_mesa(mesa_origen.id, "Libre")
-        cambiar_estado_mesa(mesa_destino.id, "Ocupada")
+        cambiar_estado_mesa(mesa_origen["id"], "Libre")
+        cambiar_estado_mesa(mesa_destino["id"], "Ocupada")
 
-        QMessageBox.information(self, "Mover Comanda", f"Las comandas de la Mesa {mesa_origen.numero} se han movido a la Mesa {mesa_destino.numero}.")
+        QMessageBox.information(self, "Mover Comanda", f"Las comandas de la Mesa {mesa_origen['numero']} se han movido a la Mesa {mesa_destino['numero']}.")
         self.actualizar_mesas()

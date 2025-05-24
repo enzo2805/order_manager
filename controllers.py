@@ -1,11 +1,11 @@
-from models import Mesa, Producto, Comanda, DetalleComanda, Ingrediente
+from models import Mesa, Producto, Comanda, DetalleComanda, Ingrediente, Receta
 from db import conectar_db
 
 def obtener_todas_las_mesas():
     with conectar_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id, numero, estado, pos_x, pos_y, reservada_a FROM Mesas")
-        return [Mesa(*fila) for fila in cursor.fetchall()]
+        return [Mesa(*row) for row in cursor.fetchall()]
 
 def obtener_comandas_por_mesa(mesa_id):
     with conectar_db() as conn:
@@ -17,19 +17,23 @@ def obtener_comandas_por_mesa(mesa_id):
         """, (mesa_id,))
         comandas = []
         for row in cursor.fetchall():
+            # Crear una instancia del modelo Comanda
             comanda = Comanda(*row)
+
+            # Obtener los detalles de la comanda
             cursor.execute("""
-                SELECT d.id, d.comanda_id, d.producto_id, p.nombre, d.cantidad, d.estado, 
-                       d.notas, d.ingredientes_excluidos, d.ingredientes_agregados, d.subtotal
-                FROM DetallesComanda d
-                JOIN Productos p ON d.producto_id = p.id
-                WHERE d.comanda_id = ?
+                SELECT dc.id, dc.comanda_id, dc.producto_id, p.nombre, dc.cantidad, dc.estado, 
+                       dc.notas, dc.ingredientes_excluidos, dc.ingredientes_agregados, dc.subtotal
+                FROM DetallesComanda dc
+                JOIN Productos p ON dc.producto_id = p.id
+                WHERE dc.comanda_id = ?
             """, (comanda.id,))
-            detalles = []
-            for detalle_row in cursor.fetchall():
-                detalles.append(DetalleComanda(*detalle_row))
+            detalles = [DetalleComanda(*detalle_row) for detalle_row in cursor.fetchall()]
+
+            # Asignar los detalles a la comanda
             comanda.detalles = detalles
             comandas.append(comanda)
+
         return comandas
 
 def obtener_detalles_comanda(comanda_id):
@@ -63,6 +67,7 @@ def agregar_mesa():
         cursor = conn.cursor()
         cursor.execute("INSERT INTO Mesas (numero, estado) VALUES ((SELECT COALESCE(MAX(numero), 0) + 1 FROM Mesas), 'Libre')")
         conn.commit()
+        return cursor.lastrowid
 
 def eliminar_mesa(mesa_id):
     with conectar_db() as conn:
@@ -73,11 +78,12 @@ def eliminar_mesa(mesa_id):
 def obtener_todos_los_productos():
     with conectar_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, nombre, precio, categoria, imagen FROM Productos")
-        productos = []
-        for fila in cursor.fetchall():
-            productos.append(Producto(*fila))
-        return productos
+        cursor.execute("""
+            SELECT id, nombre, precio, categoria, imagen
+            FROM Productos
+        """)
+        productos = [Producto(*row) for row in cursor.fetchall()]
+    return productos
 
 def agregar_producto(nombre, precio, categoria, imagen=None):
     with conectar_db() as conn:
@@ -192,16 +198,26 @@ def cambiar_estado_detalle_comanda(detalle_id, nuevo_estado):
         )
         conn.commit()
 
+def obtener_todas_las_comandas_para_mesas():
+    with conectar_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, mesa_id, fecha_hora, estado, tipo, metodo_pago
+            FROM Comandas
+            WHERE estado != 'Pagado'
+        """)
+        comandas = [Comanda(*row) for row in cursor.fetchall()]
+        return comandas
+
+
 def obtener_todas_las_comandas():
     with conectar_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT id, mesa_id, fecha_hora, estado, tipo
+            SELECT id, mesa_id, fecha_hora, estado, tipo, metodo_pago
             FROM Comandas
         """)
-        comandas = []
-        for row in cursor.fetchall():
-            comandas.append(Comanda(*row))
+        comandas = [Comanda(*row) for row in cursor.fetchall()]
         return comandas
 
 def actualizar_estado_comanda(comanda_id):
@@ -262,23 +278,26 @@ def obtener_comandas_pendientes_y_en_preparacion():
     with conectar_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT id, mesa_id, fecha_hora, estado, tipo
+            SELECT id, mesa_id, fecha_hora, estado, tipo, metodo_pago
             FROM Comandas
             WHERE estado IN ('Pendiente', 'En preparación')
         """)
         comandas = []
         for row in cursor.fetchall():
             comanda = Comanda(*row)
+
             cursor.execute("""
-                SELECT d.id, d.comanda_id, d.producto_id, p.nombre, d.cantidad, d.estado, d.notas, 
-                       d.ingredientes_excluidos, d.ingredientes_agregados, d.subtotal
-                FROM DetallesComanda d
-                JOIN Productos p ON d.producto_id = p.id
-                WHERE d.comanda_id = ? AND p.categoria NOT IN ('Alchohol', 'No alcoholico')
+                SELECT dc.id, dc.comanda_id, dc.producto_id, p.nombre, dc.cantidad, dc.estado, 
+                       dc.notas, dc.ingredientes_excluidos, dc.ingredientes_agregados, dc.subtotal
+                FROM DetallesComanda dc
+                JOIN Productos p ON dc.producto_id = p.id
+                WHERE dc.comanda_id = ? AND p.categoria NOT IN ('Alcohol', 'No alcoholico')
             """, (comanda.id,))
             detalles = [DetalleComanda(*detalle_row) for detalle_row in cursor.fetchall()]
+
             comanda.detalles = detalles
             comandas.append(comanda)
+
         return comandas
     
 def descontar_ingredientes(comanda_id):
@@ -328,7 +347,7 @@ def editar_receta(receta_id, cantidad_necesaria):
         """, (cantidad_necesaria, receta_id))
         conn.commit()
 
-def eliminar_receta(receta_id):
+def eliminar_ingrediente_de_receta(receta_id):
     with conectar_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
@@ -346,7 +365,8 @@ def obtener_recetas_por_producto(producto_id):
             JOIN Ingredientes i ON r.ingrediente_id = i.id
             WHERE r.producto_id = ?
         """, (producto_id,))
-        return cursor.fetchall()
+        recetas = [Receta(*row) for row in cursor.fetchall()]
+    return recetas
     
 def verificar_stock(producto_id, cantidad_producto):
     with conectar_db() as conn:

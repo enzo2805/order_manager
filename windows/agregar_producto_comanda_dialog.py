@@ -8,7 +8,6 @@ class AgregarProductoComandaDialog(QDialog):
         self.setGeometry(100, 100, 400, 300)
         layout = QVBoxLayout()
 
-        # Botón para seleccionar un producto
         self.boton_seleccionar_producto = QPushButton("Seleccionar Producto")
         self.boton_seleccionar_producto.clicked.connect(self.seleccionar_producto)
         layout.addWidget(self.boton_seleccionar_producto)
@@ -43,7 +42,7 @@ class AgregarProductoComandaDialog(QDialog):
         dialog = SeleccionarProductoDialog(self)
         if dialog.exec_() == QDialog.Accepted:
             self.producto_seleccionado = dialog.obtener_producto_seleccionado()
-            self.label_producto_seleccionado.setText(f"Producto seleccionado: {self.producto_seleccionado.nombre}")
+            self.label_producto_seleccionado.setText(f"Producto seleccionado: {self.producto_seleccionado['nombre']}")
 
     def obtener_seleccion(self):
         return self.producto_seleccionado, self.cantidad_input.value(), self.notas_input.text()

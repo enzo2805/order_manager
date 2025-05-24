@@ -37,3 +37,7 @@ Thumbs.db
 *.pyc
 *.qrc
 *.ui~
+
+# Lybraries y dependencias
+libraries.txt
+requirements.txt

@@ -1,19 +1,24 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QFormLayout, QInputDialog
 
-from controllers import agregar_producto_a_comanda, cambiar_estado_comanda, cambiar_estado_mesa, obtener_comandas_por_mesa
-from models import Comanda
+from api_client import (
+    cambiar_estado_comanda,
+    cambiar_estado_mesa,
+    obtener_comandas_por_mesa,
+    crear_comanda,
+    agregar_producto_a_comanda
+)
+from models import Comanda, DetalleComanda
 from windows.agregar_producto_comanda_dialog import AgregarProductoComandaDialog
 
 class DetalleMesaDialog(QDialog):
     def __init__(self, mesa, comandas, parent=None):
         super().__init__(parent)
         self.mesa = mesa
-        self.comandas = comandas
+        self.comandas = []  # Inicializar como una lista vacía
         self.setWindowTitle(f"Detalle de Mesa {mesa.numero}")
         self.setGeometry(100, 100, 600, 400)
         layout = QVBoxLayout()
         
-        # Información de la mesa
         info_layout = QFormLayout()
         info_layout.addRow("Número:", QLabel(str(mesa.numero)))
         info_layout.addRow("Estado:", QLabel(mesa.estado))
@@ -21,7 +26,6 @@ class DetalleMesaDialog(QDialog):
             info_layout.addRow("Reservada a:", QLabel(mesa.reservada_a))
         layout.addLayout(info_layout)
         
-        # Botones para cambiar el estado de la mesa
         botones_layout = QHBoxLayout()
         self.boton_libre = QPushButton("Libre")
         self.boton_libre.clicked.connect(lambda: self.cambiar_estado("Libre"))
@@ -41,7 +45,8 @@ class DetalleMesaDialog(QDialog):
         self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels(["ID Comanda", "Producto", "Cantidad", "Estado", "Notas", "Ing. Excluidos", "Ing. Agregados", "Subtotal"])
         
-        self.actualizar_tabla_comandas()
+        # Llamar a actualizar_comandas para inicializar self.comandas
+        self.actualizar_comandas()
 
         layout.addWidget(self.table)
 
@@ -75,18 +80,50 @@ class DetalleMesaDialog(QDialog):
                 comanda_activa = next((comanda for comanda in self.comandas if comanda.estado == "Pendiente"), None)
 
                 if not comanda_activa:
-                    from controllers import crear_comanda
                     comanda_id = crear_comanda(self.mesa.id)
-                    comanda_activa = Comanda(comanda_id, self.mesa.id, None, "Pendiente", "Comer en el lugar")
+                    comanda_activa = Comanda(comanda_id, self.mesa.id, None, "Pendiente", "Comer en el lugar", None)
                     self.comandas.append(comanda_activa)
 
-                from controllers import agregar_producto_a_comanda
-                agregar_producto_a_comanda(comanda_activa.id, producto.id, cantidad, notas)
+                agregar_producto_a_comanda(comanda_activa.id, producto["id"], cantidad, notas)
 
                 self.actualizar_comandas()
 
     def actualizar_comandas(self):
-        self.comandas = obtener_comandas_por_mesa(self.mesa.id)
+        # Obtener las comandas desde la API
+        comandas_dict = obtener_comandas_por_mesa(self.mesa.id)
+        
+        # Convertir los diccionarios en objetos Comanda
+        self.comandas = []
+        for comanda_dict in comandas_dict:
+            comanda = Comanda(
+                id=comanda_dict["id"],
+                mesa_id=comanda_dict["mesa_id"],
+                fecha_hora=comanda_dict["fecha_hora"],
+                estado=comanda_dict["estado"],
+                tipo=comanda_dict["tipo"],
+                metodo_pago=comanda_dict.get("metodo_pago", None)
+            )
+            
+            # Convertir los detalles de la comanda
+            comanda.detalles = [
+                DetalleComanda(
+                    id=detalle["id"],
+                    comanda_id=detalle["comanda_id"],
+                    producto_id=detalle["producto_id"],
+                    producto_nombre=detalle["producto_nombre"],
+                    cantidad=detalle["cantidad"],
+                    estado=detalle["estado"],
+                    notas=detalle.get("notas", ""),
+                    ingredientes_excluidos=detalle.get("ingredientes_excluidos", ""),
+                    ingredientes_agregados=detalle.get("ingredientes_agregados", ""),
+                    subtotal=detalle["subtotal"]
+                )
+                for detalle in comanda_dict.get("detalles", [])
+            ]
+            
+            self.comandas.append(comanda)
+
+        # Actualizar la tabla de comandas
         self.actualizar_tabla_comandas()
 
     def actualizar_tabla_comandas(self):

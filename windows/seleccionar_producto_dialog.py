@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QDialog, QTabWidget, QWidget, QGridLayout
 from PyQt5.QtCore import QByteArray, QSize
 from PyQt5.QtGui import QPixmap, QIcon
-from controllers import obtener_todos_los_productos
+from api_client import obtener_productos
 
 
 class SeleccionarProductoDialog(QDialog):
@@ -11,12 +11,10 @@ class SeleccionarProductoDialog(QDialog):
         self.setGeometry(100, 100, 800, 600)
         layout = QVBoxLayout()
 
-        # Crear un QTabWidget para organizar los productos por categorías
         self.tabs = QTabWidget()
         layout.addWidget(self.tabs)
 
-        # Obtener los productos y organizarlos por categorías
-        productos = obtener_todos_los_productos()
+        productos = obtener_productos()
         categorias = ["Entrada", "Plato principal", "Desayuno/Merienda", "Postre", "Alcohol", "No alcoholico", "Extra"]
 
         for categoria in categorias:
@@ -24,32 +22,27 @@ class SeleccionarProductoDialog(QDialog):
             grid_layout = QGridLayout()
             tab.setLayout(grid_layout)
 
-            # Filtrar productos por categoría
-            productos_categoria = [p for p in productos if p.categoria == categoria]
+            productos_categoria = [p for p in productos if p["categoria"] == categoria]
 
-            # Agregar productos a la cuadrícula
             for i, producto in enumerate(productos_categoria):
-                # Crear un botón con la imagen y el nombre del producto
                 boton = QPushButton()
-                boton.setText(producto.nombre)
+                boton.setText(producto["nombre"])
 
-                # Crear un QPixmap y cargar los datos de la imagen
                 pixmap = QPixmap()
-                if producto.imagen:
-                    pixmap.loadFromData(QByteArray(producto.imagen))
+                if producto["imagen"]:
+                    imagen_bytes = QByteArray.fromBase64(producto["imagen"].encode('utf-8'))
+                    pixmap.loadFromData(imagen_bytes)
 
-                # Configurar el ícono del botón
-                if not pixmap.isNull():  # Verificar que el QPixmap se cargó correctamente
+                if not pixmap.isNull():
                     boton.setIcon(QIcon(pixmap))
                 else:
-                    boton.setIcon(QIcon())  # Configurar un ícono vacío si no hay imagen
+                    boton.setIcon(QIcon())
 
-                boton.setIconSize(QSize(100, 100))  # Ajustar el tamaño del ícono
-                boton.setStyleSheet("text-align: center;")  # Centrar el texto debajo del ícono
+                boton.setIconSize(QSize(100, 100))
+                boton.setStyleSheet("text-align: center;") 
                 boton.clicked.connect(lambda checked, p=producto: self.seleccionar_producto(p))
 
-                # Agregar el botón a la cuadrícula
-                row, col = divmod(i, 3)  # 3 columnas por fila
+                row, col = divmod(i, 3) 
                 grid_layout.addWidget(boton, row, col)
 
             self.tabs.addTab(tab, categoria)

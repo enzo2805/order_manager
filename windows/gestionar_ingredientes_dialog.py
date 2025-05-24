@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QMessageBox, QInputDialog
-from controllers import obtener_ingredientes, agregar_ingrediente, editar_ingrediente, eliminar_ingrediente
+from api_client import obtener_ingredientes, agregar_ingrediente, editar_ingrediente, eliminar_ingrediente
 
 class GestionarIngredientesDialog(QDialog):
     def __init__(self, parent=None):
@@ -33,14 +33,15 @@ class GestionarIngredientesDialog(QDialog):
         self.cargar_ingredientes()
 
     def cargar_ingredientes(self):
+        # Llama a la API para obtener los ingredientes
         ingredientes = obtener_ingredientes()
         self.table.setRowCount(len(ingredientes))
         for row, ingrediente in enumerate(ingredientes):
-            self.table.setItem(row, 0, QTableWidgetItem(str(ingrediente.id)))
-            self.table.setItem(row, 1, QTableWidgetItem(ingrediente.nombre))
-            self.table.setItem(row, 2, QTableWidgetItem(str(ingrediente.stock)))
-            self.table.setItem(row, 3, QTableWidgetItem(str(ingrediente.stock_minimo)))
-            self.table.setItem(row, 4, QTableWidgetItem(ingrediente.unidad))
+            self.table.setItem(row, 0, QTableWidgetItem(str(ingrediente["id"])))
+            self.table.setItem(row, 1, QTableWidgetItem(ingrediente["nombre"]))
+            self.table.setItem(row, 2, QTableWidgetItem(str(ingrediente["stock"])))
+            self.table.setItem(row, 3, QTableWidgetItem(str(ingrediente["stock_minimo"])))
+            self.table.setItem(row, 4, QTableWidgetItem(ingrediente["unidad"]))
 
     def agregar_ingrediente(self):
         nombre, ok = QInputDialog.getText(self, "Agregar Ingrediente", "Ingrese el nombre del ingrediente:")
@@ -59,6 +60,7 @@ class GestionarIngredientesDialog(QDialog):
         if not ok or not unidad:
             return
 
+        # Llama a la API para agregar el ingrediente
         agregar_ingrediente(nombre, stock, stock_minimo, unidad)
         self.cargar_ingredientes()
 
@@ -85,6 +87,7 @@ class GestionarIngredientesDialog(QDialog):
         if not ok or not unidad:
             return
 
+        # Llama a la API para editar el ingrediente
         editar_ingrediente(ingrediente_id, nombre, stock, stock_minimo, unidad)
         self.cargar_ingredientes()
 
@@ -97,5 +100,6 @@ class GestionarIngredientesDialog(QDialog):
         ingrediente_id = int(self.table.item(row, 0).text())
         respuesta = QMessageBox.question(self, "Eliminar Ingrediente", "¿Está seguro de que desea eliminar este ingrediente?", QMessageBox.Yes | QMessageBox.No)
         if respuesta == QMessageBox.Yes:
+            # Llama a la API para eliminar el ingrediente
             eliminar_ingrediente(ingrediente_id)
             self.cargar_ingredientes()
