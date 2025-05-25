@@ -14,6 +14,7 @@ from controllers import (
     eliminar_mesa,
     guardar_posicion_mesa,
     obtener_comandas_pendientes_y_en_preparacion,
+    obtener_detalles_comanda,
     obtener_ingredientes,
     obtener_recetas_por_producto,
     obtener_todas_las_comandas_para_mesas,
