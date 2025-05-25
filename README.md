@@ -17,7 +17,7 @@
 
 ### 🔧 Requisitos previos  
 - Tener Python 3.x instalado.  
-- Instalar las dependencias necesarias: PyQt5 y SQLite.  
+- Instalar las dependencias necesarias: PyQt5, Flask y SQLite.  
 
 ### 🔽 Instalación  
 1. Clona el repositorio:  
@@ -31,6 +31,8 @@
 3. Instala las dependencias necesarias:  
    ```bash
    pip install PyQt5
+   pip install Flask
+
    ```
 4. Ejecuta la aplicación:  
    ```bash
