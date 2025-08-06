@@ -1,15 +1,37 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QDialog, QTabWidget, QWidget, QGridLayout
-from PyQt5.QtCore import QByteArray, QSize
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QToolButton, QTabWidget, QGridLayout
+from PyQt5.QtCore import QByteArray, QSize, pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap, QIcon
 from api_client import obtener_productos
 
+class WidgetSeleccionarProducto(QWidget):
+    producto_seleccionado = pyqtSignal(dict)
 
-class SeleccionarProductoDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Seleccionar Producto")
-        self.setGeometry(100, 100, 800, 600)
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
+        self.setStyleSheet("""
+            QTabBar::tab {
+                font-size: 18px;
+                min-width: 100px;
+                min-height: 40px;
+            }
+            QTabBar::tab:selected {
+                background: #388e3c;
+                color: #fff;
+            }
+            QTabBar::tab:hover {
+                background: #1565c0;
+            }
+            QTabWidget::pane {
+                border: 2px solid #1976d2;
+                border-radius: 8px;
+                margin-top: 2px;
+            }
+            QPushButton[clase="highlight1_btn"] {
+                font-size: 20px;
+                padding: 10px;
+            }
+        """)
 
         self.tabs = QTabWidget()
         layout.addWidget(self.tabs)
@@ -25,8 +47,10 @@ class SeleccionarProductoDialog(QDialog):
             productos_categoria = [p for p in productos if p["categoria"] == categoria]
 
             for i, producto in enumerate(productos_categoria):
-                boton = QPushButton()
+                boton = QToolButton()
                 boton.setText(producto["nombre"])
+                boton.setProperty("clase", "highlight1_btn")
+                boton.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
 
                 pixmap = QPixmap()
                 if producto["imagen"]:
@@ -38,20 +62,14 @@ class SeleccionarProductoDialog(QDialog):
                 else:
                     boton.setIcon(QIcon())
 
-                boton.setIconSize(QSize(100, 100))
-                boton.setStyleSheet("text-align: center;") 
+                boton.setIconSize(QSize(250, 250))
+                boton.setStyleSheet("text-align: center;")
                 boton.clicked.connect(lambda checked, p=producto: self.seleccionar_producto(p))
 
-                row, col = divmod(i, 3) 
+                row, col = divmod(i, 3)
                 grid_layout.addWidget(boton, row, col)
 
             self.tabs.addTab(tab, categoria)
 
-        self.setLayout(layout)
-
     def seleccionar_producto(self, producto):
-        self.selected_producto = producto
-        self.accept()
-
-    def obtener_producto_seleccionado(self):
-        return getattr(self, "selected_producto", None)
+        self.producto_seleccionado.emit(producto)

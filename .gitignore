@@ -41,3 +41,7 @@ Thumbs.db
 # Lybraries y dependencias
 libraries.txt
 requirements.txt
+
+# Test files
+tests
+*.test.py

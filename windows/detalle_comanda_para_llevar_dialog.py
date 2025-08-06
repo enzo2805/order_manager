@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QHBoxLayout, QMessageBox, QInputDialog
 from api_client import agregar_producto_a_comanda, crear_comanda_para_llevar, cambiar_estado_comanda
-from windows.agregar_producto_comanda_dialog import AgregarProductoComandaDialog
+from windows.agregar_producto_comanda_dialog import WidgetAgregarProductoComanda
 
 
 class DetalleComandaParaLlevarDialog(QDialog):
@@ -31,7 +31,7 @@ class DetalleComandaParaLlevarDialog(QDialog):
         self.setLayout(layout)
 
         self.actualizar_tabla()
-
+        
     def actualizar_tabla(self):
         self.table.setRowCount(len(self.productos))
         for row, detalle in enumerate(self.productos):
@@ -42,20 +42,22 @@ class DetalleComandaParaLlevarDialog(QDialog):
             self.table.setItem(row, 3, QTableWidgetItem(f"${subtotal:.2f}"))
 
     def agregar_producto(self):
-        dialog = AgregarProductoComandaDialog(self)
-        if dialog.exec_() == QDialog.Accepted:
-            producto, cantidad, notas = dialog.obtener_seleccion()
-            if producto:
-                subtotal = producto.get("precio", 0) * cantidad
-                self.productos.append({
-                    "id": producto["id"],
-                    "nombre": producto["nombre"],
-                    "cantidad": cantidad,
-                    "notas": notas,
-                    "subtotal": subtotal
-                })
-                self.actualizar_tabla()
-                QMessageBox.information(self, "Producto Agregado", f"Producto '{producto['nombre']}' agregado a la comanda.")
+        self.widget_agregar = WidgetAgregarProductoComanda(self)
+        self.widget_agregar.on_aceptar = self.procesar_agregado_producto
+        self.widget_agregar.on_cancelar = self.cancelar_agregado_producto
+        self.widget_agregar.show()
+
+    def procesar_agregado_producto(self, seleccion):
+        producto, cantidad, notas = seleccion
+        self.detalles.append({
+            "producto_id": producto["id"],
+            "cantidad": cantidad,
+            "notas": notas
+        })
+        self.widget_agregar.setParent(None)
+
+    def cancelar_agregado_producto(self):
+        self.widget_agregar.setParent(None)
 
     def finalizar_comanda(self):
         if not self.productos:

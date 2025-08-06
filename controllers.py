@@ -17,10 +17,8 @@ def obtener_comandas_por_mesa(mesa_id):
         """, (mesa_id,))
         comandas = []
         for row in cursor.fetchall():
-            # Crear una instancia del modelo Comanda
             comanda = Comanda(*row)
 
-            # Obtener los detalles de la comanda
             cursor.execute("""
                 SELECT dc.id, dc.comanda_id, dc.producto_id, p.nombre, dc.cantidad, dc.estado, 
                        dc.notas, dc.ingredientes_excluidos, dc.ingredientes_agregados, dc.subtotal
@@ -30,7 +28,6 @@ def obtener_comandas_por_mesa(mesa_id):
             """, (comanda.id,))
             detalles = [DetalleComanda(*detalle_row) for detalle_row in cursor.fetchall()]
 
-            # Asignar los detalles a la comanda
             comanda.detalles = detalles
             comandas.append(comanda)
 
@@ -86,12 +83,19 @@ def obtener_todos_los_productos():
     return productos
 
 def agregar_producto(nombre, precio, categoria, imagen=None):
+    import base64
     with conectar_db() as conn:
         cursor = conn.cursor()
         imagen_blob = None
         if imagen:
-            with open(imagen, "rb") as file:
-                imagen_blob = file.read()
+            if isinstance(imagen, bytes):
+                imagen_blob = imagen
+            elif isinstance(imagen, str):
+                try:
+                    imagen_blob = base64.b64decode(imagen)
+                except Exception as e:
+                    print("Error al decodificar imagen base64:", e)
+                    imagen_blob = None
         cursor.execute(
             "INSERT INTO Productos (nombre, precio, categoria, imagen) VALUES (?, ?, ?, ?)",
             (nombre, precio, categoria, imagen_blob),
@@ -101,18 +105,30 @@ def agregar_producto(nombre, precio, categoria, imagen=None):
 def editar_producto(producto_id, nombre, precio, categoria, imagen=None):
     with conectar_db() as conn:
         cursor = conn.cursor()
-        imagen_blob = None
-        if imagen:
-            with open(imagen, "rb") as file:
-                imagen_blob = file.read()
-        cursor.execute(
-            """
-            UPDATE Productos
-            SET nombre = ?, precio = ?, categoria = ?, imagen = ?
-            WHERE id = ?
-            """,
-            (nombre, precio, categoria, imagen_blob, producto_id),
-        )
+        if imagen is not None:
+            imagen_blob = None
+            if isinstance(imagen, bytes):
+                imagen_blob = imagen
+            elif isinstance(imagen, str):
+                with open(imagen, "rb") as file:
+                    imagen_blob = file.read()
+            cursor.execute(
+                """
+                UPDATE Productos
+                SET nombre = ?, precio = ?, categoria = ?, imagen = ?
+                WHERE id = ?
+                """,
+                (nombre, precio, categoria, imagen_blob, producto_id),
+            )
+        else:
+            cursor.execute(
+                """
+                UPDATE Productos
+                SET nombre = ?, precio = ?, categoria = ?
+                WHERE id = ?
+                """,
+                (nombre, precio, categoria, producto_id),
+            )
         conn.commit()
 
 def eliminar_producto(producto_id):

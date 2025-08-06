@@ -14,13 +14,50 @@ class GestionarRecetasDialog(QDialog):
         self.producto_id = producto_id
         self.setWindowTitle(f"Gestionar Recetas - {nombre_producto}")
         self.setGeometry(100, 100, 600, 400)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f0f0f0;  /* Color de fondo claro */
+                border: 1px solid #ccc;  /* Borde sutil */
+                border-radius: 8px;  /* Bordes redondeados */
+            }
+            QTableWidget {
+                background-color: #ffffff;  /* Fondo blanco para la tabla */
+                border: 1px solid #ccc;  /* Borde de la tabla */
+                border-radius: 4px;  /* Bordes redondeados para la tabla */
+            }  
+            QTableWidget::item {
+                border-bottom: 1px solid #ddd;  /* Línea divisoria entre filas */
+                font-size: 14px;  /* Tamaño de fuente de los items */
+            }
+            QTablePanel {
+                background-color: #f9f9f9;  /* Color de fondo del panel
+                border: 1px solid #ddd;  /* Borde del panel */
+            }
+            QTableWidget::item:selected {
+                background-color: #d0e7ff;  /* Color de fondo al seleccionar */
+                color: #000;  /* Color de texto al seleccionar */
+            }
+            QPushButton {
+                background-color: #4CAF50;  /* Color de fondo verde */
+                color: white;  /* Color de texto blanco */
+                border: none;  /* Sin borde */
+                border-radius: 4px;  /* Bordes redondeados */
+                padding: 10px 20px;  /* Espaciado interno */
+                font-size: 16px;  /* Tamaño de fuente */
+            }
+            QPushButton:hover {
+                background-color: #45a049;  /* Color de fondo verde más oscuro al pasar
+                por encima */
+            }
+            
+        """)
 
         layout = QVBoxLayout()
 
         self.table = QTableWidget()
         self.table.setRowCount(0)
         self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Ingrediente", "Cantidad Necesaria", "Unidad"])
+        self.table.setHorizontalHeaderLabels(["Ingrediente", "Cant. Necesaria", "Unidad"])
         self.actualizar_recetas()
 
         layout.addWidget(self.table)
@@ -42,17 +79,17 @@ class GestionarRecetasDialog(QDialog):
         self.setLayout(layout)
 
     def actualizar_recetas(self):
-        recetas = obtener_recetas_por_producto(self.producto_id)  # Llama a la API
+        recetas = obtener_recetas_por_producto(self.producto_id)
         self.table.setRowCount(len(recetas))
         for row, receta in enumerate(recetas):
             item_nombre = QTableWidgetItem(receta["nombre"])
-            item_nombre.setData(Qt.UserRole, receta["id"])  # Guarda el id de la receta oculto
+            item_nombre.setData(Qt.UserRole, receta["id"])
             self.table.setItem(row, 0, item_nombre)
             self.table.setItem(row, 1, QTableWidgetItem(str(receta["cantidad_necesaria"])))
             self.table.setItem(row, 2, QTableWidgetItem(receta["unidad"]))
 
     def agregar_ingrediente(self):
-        ingredientes = obtener_ingredientes()  # Llama a la API
+        ingredientes = obtener_ingredientes()
         nombres_ingredientes = [ingrediente["nombre"] for ingrediente in ingredientes]
 
         dialog = QDialog(self)
@@ -83,7 +120,7 @@ class GestionarRecetasDialog(QDialog):
             if not ok:
                 return
 
-            agregar_receta(self.producto_id, ingrediente["id"], cantidad_necesaria)  # Llama a la API
+            agregar_receta(self.producto_id, ingrediente["id"], cantidad_necesaria)
             self.actualizar_recetas()
             dialog.accept()
 
@@ -106,7 +143,7 @@ class GestionarRecetasDialog(QDialog):
         if not ok:
             return
 
-        editar_receta(receta_id, cantidad_necesaria)  # Llama a la API
+        editar_receta(receta_id, cantidad_necesaria)
         self.actualizar_recetas()
 
     def eliminar_ingrediente(self):

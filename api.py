@@ -101,21 +101,44 @@ def obtener_productos_endpoint():
 
 @app.route('/productos', methods=['POST'])
 def agregar_producto_endpoint():
+    import base64
+
     datos = request.json
     nombre = datos["nombre"]
     precio = datos["precio"]
     categoria = datos["categoria"]
     imagen = datos.get("imagen", None)
+    if isinstance(imagen, str):
+        try:
+            imagen = base64.b64decode(imagen)
+        except Exception as e:
+            print("Error al decodificar base64:", e)
+    elif isinstance(imagen, bytes):
+        print("La imagen ya es binario (bytes)")
+        pass
+    else:
+        print("Tipo de imagen desconocido:", type(imagen))
     agregar_producto(nombre, precio, categoria, imagen)
     return jsonify({"nombre": nombre, "precio": precio, "categoria": categoria}), 201
 
 @app.route('/productos/<int:id>', methods=['PUT'])
 def editar_producto_endpoint(id):
+    import base64
+
     datos = request.json
     nombre = datos["nombre"]
     precio = datos["precio"]
     categoria = datos["categoria"]
     imagen = datos.get("imagen", None)
+    if isinstance(imagen, str):
+        try:
+            imagen = base64.b64decode(imagen)
+        except Exception as e:
+            print("Error al decodificar base64:", e)
+    elif isinstance(imagen, bytes):
+        pass
+    else:
+        print("Tipo de imagen desconocido:", type(imagen))
     editar_producto(id, nombre, precio, categoria, imagen)
     return jsonify({"id": id, "nombre": nombre, "precio": precio, "categoria": categoria})
 
@@ -317,5 +340,5 @@ def obtener_todas_las_comandas_para_mesas_endpoint():
         print(f"Error al obtener todas las comandas: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000, debug=True)

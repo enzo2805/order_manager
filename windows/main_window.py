@@ -1,95 +1,143 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QAction, QMessageBox, QDialog
-from windows.gestionar_menu_dialog import GestionarMenuDialog
-from windows.interfaz_mesas import InterfazMesas
-from windows.detalle_comanda_para_llevar_dialog import DetalleComandaParaLlevarDialog
-from windows.ver_comandas_dialog import VerComandasDialog
-from windows.gestionar_ingredientes_dialog import GestionarIngredientesDialog
+from PyQt5.QtWidgets import QMainWindow, QLabel, QStackedWidget, QWidget, QPushButton, QVBoxLayout, QHBoxLayout
+from PyQt5.QtCore import QTimer, QTime, Qt, QDate
+
+from windows.gestionar_menu_dialog import WidgetMenu
+from windows.interfaz_mesas import WidgetMesas
+from windows.ver_comandas_dialog import WidgetComandas
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Gestión de Comandas")
-        self.setGeometry(100, 100, 400, 300)
+        self.setWindowTitle("Sistema de Gestión")
+        self.setObjectName("mainWindow")
+        self.setStyleSheet("""
+            #mainWindow {
+                background-color: white;
+            }
+            QToolButton {
+                font-size: 14px;
+            }        
+            QPushButton[clase = "highlight1_btn"] {
+                font-size: 28px;
+                padding: 20px 40px;
+                min-width: 200px;
+                min-height: 60px;
+            }
+            QToolButton[clase = "highlight1_btn"] {
+                font-size: 28px;
+                padding: 20px 40px;
+                min-width: 200px;
+                max-width: 200px;
+                min-height: 60px;
+            }
+            QPushButton[clase = "highlight2_btn"] {
+                font-size: 22px;
+                padding: 10px 20px;
+                min-width: 100px;
+                min-height: 30px;
+            }
+            QToolButton[clase = "highlight2_btn"] {
+                font-size: 22px;
+                padding: 10px 20px;
+                min-width: 100px;
+                min-height: 30px;
+            }
+            QPushButton[clase = "mesa_btn"] {
+                font-size: 14px;
+                min-width: 40px;
+                min-height: 40px;
+                padding: 5px;
+            }
+            QCheckBox, QLineEdit {
+                font-size: 26px;
+                padding: 10px;
+            }
+            QLabel {
+                font-size: 26px;
+                padding: 8px;
+            }
+            QTableWidget {
+                font-size: 16px;
+            }
+            QHeaderView::section {
+                font-size: 18px;
+                font-weight: bold;
+                border: 1px solid #1565c0;
+            }
+            QSpinBox {
+                font-size: 22px;
+                padding: 5px;
+            }
+            QFormLayout {
+                font-size: 22px;
+                margin: 10px;
+                padding: 10px;
+            }
+            QDoubleSpinBox {
+                font-size: 22px;
+                padding: 5px;
+            }
+            QComboBox {
+                font-size: 22px;
+                padding: 5px;
+            }
+            QFileDialog {
+                font-size: 22px;
+                padding: 10px;
+            }
+        """)
+        self.showMaximized()
 
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-        self.layout_principal = QVBoxLayout()
+        self.stacked = QStackedWidget()
+        self.stacked.showFullScreen()
+        self.setCentralWidget(self.stacked)
 
-        self.boton_take_away = QPushButton("Para llevar")
-        self.boton_take_away.clicked.connect(self.take_away)
-        self.layout_principal.addWidget(self.boton_take_away)
+        self.widget_mesas = WidgetMesas()
+        self.widget_menu = WidgetMenu()
+        self.widget_comandas = WidgetComandas()
 
-        self.boton_ver_mesas = QPushButton("Ver Mesas")
-        self.boton_ver_mesas.clicked.connect(self.ver_mesas)
-        self.layout_principal.addWidget(self.boton_ver_mesas)
+        self.stacked.addWidget(self.widget_mesas)
+        self.stacked.addWidget(self.widget_menu)
+        self.stacked.addWidget(self.widget_comandas)
 
-        self.boton_ver_comandas = QPushButton("Ver Comandas")
-        self.boton_ver_comandas.clicked.connect(self.ver_comandas)
-        self.layout_principal.addWidget(self.boton_ver_comandas)
-        
-        self.boton_gestionar_ingredientes = QPushButton("Gestionar Ingredientes")
-        self.boton_gestionar_ingredientes.clicked.connect(self.gestionar_ingredientes)
-        self.layout_principal.addWidget(self.boton_gestionar_ingredientes)
+        nav = QWidget()
+        nav_layout = QHBoxLayout(nav)
+        btn_mesas = QPushButton("Mesas")
+        btn_mesas.setProperty("clase", "highlight1_btn")
+        btn_menu = QPushButton("Menú")
+        btn_menu.setProperty("clase", "highlight1_btn")
+        btn_comandas = QPushButton("Comandas")
+        btn_comandas.setProperty("clase", "highlight1_btn")
+        nav_layout.addWidget(btn_mesas)
+        nav_layout.addWidget(btn_menu)
+        nav_layout.addWidget(btn_comandas)
+        nav_layout.addStretch()
 
-        self.boton_gestionar_menu = QPushButton("Gestionar Menú")
-        self.boton_gestionar_menu.clicked.connect(self.gestionar_menu)
-        self.layout_principal.addWidget(self.boton_gestionar_menu)
+        btn_mesas.clicked.connect(lambda: self.stacked.setCurrentWidget(self.widget_mesas))
+        btn_menu.clicked.connect(lambda: self.stacked.setCurrentWidget(self.widget_menu))
+        btn_comandas.clicked.connect(lambda: self.stacked.setCurrentWidget(self.widget_comandas))
 
-        self.central_widget.setLayout(self.layout_principal)
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(nav)
+        main_layout.addWidget(self.stacked, stretch=1)
 
-        self.crear_menu()
+        container = QWidget()
+        container.setLayout(main_layout)
+        self.setCentralWidget(container)
 
-    def crear_menu(self):
-        menubar = self.menuBar()
-        menu_opciones = menubar.addMenu("Opciones")
+        self.reloj_label = QLabel(self)
+        self.reloj_label.setStyleSheet("font-size: 18px; padding: 5px;")
+        self.reloj_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-        accion_dine_in = QAction("Comer en el lugar", self)
-        accion_dine_in.triggered.connect(self.dine_in)
-        menu_opciones.addAction(accion_dine_in)
+        main_layout.addWidget(self.reloj_label)
 
-        accion_take_away = QAction("Para llevar", self)
-        accion_take_away.triggered.connect(self.take_away)
-        menu_opciones.addAction(accion_take_away)
+        self.timer_reloj = QTimer(self)
+        self.timer_reloj.timeout.connect(self.actualizar_reloj)
+        self.timer_reloj.start(1000)
 
-        accion_ver_mesas = QAction("Ver Mesas", self)
-        accion_ver_mesas.triggered.connect(self.ver_mesas)
-        menu_opciones.addAction(accion_ver_mesas)
+        self.actualizar_reloj()
 
-        accion_ver_comandas = QAction("Ver Comandas", self)
-        accion_ver_comandas.triggered.connect(self.ver_comandas)
-        menu_opciones.addAction(accion_ver_comandas)
-
-        accion_gestionar_menu = QAction("Gestionar Menú", self)
-        accion_gestionar_menu.triggered.connect(self.gestionar_menu)
-        menu_opciones.addAction(accion_gestionar_menu)
-
-    def dine_in(self):
-        self.ventana_mesas = InterfazMesas()
-        self.ventana_mesas.show()
-
-    def take_away(self):
-        dialog = DetalleComandaParaLlevarDialog(self)
-        dialog.exec_()
-
-    def ver_mesas(self):
-        self.ventana_mesas = InterfazMesas()
-        self.ventana_mesas.show()
-
-    def ver_comandas(self):
-        dialog = VerComandasDialog(self)
-        dialog.exec_()
-
-    def gestionar_menu(self):
-        self.ventana_menu = GestionarMenuDialog(self)
-        self.ventana_menu.exec_()
-    
-    def gestionar_ingredientes(self):
-        dialog = GestionarIngredientesDialog(self)
-        dialog.exec_()
-
-
-def iniciar_interfaz():
-    app = QApplication(sys.argv)
-    ventana = MainWindow()
-    ventana.show()
-    sys.exit(app.exec_())
+    def actualizar_reloj(self):
+        hora_actual = QTime.currentTime().toString("hh:mm:ss")
+        fecha_actual = QDate.currentDate().toString("dd/MM/yyyy")
+        self.reloj_label.setText(f"{hora_actual} - {fecha_actual}")

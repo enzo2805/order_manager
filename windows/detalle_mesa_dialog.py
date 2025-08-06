@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QFormLayout, QInputDialog
+from PyQt5.QtWidgets import QWidget, QHeaderView, QSizePolicy, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QFormLayout, QInputDialog
 
 from api_client import (
     cambiar_estado_comanda,
@@ -8,60 +8,62 @@ from api_client import (
     agregar_producto_a_comanda
 )
 from models import Comanda, DetalleComanda
-from windows.agregar_producto_comanda_dialog import AgregarProductoComandaDialog
+from windows.agregar_producto_comanda_dialog import WidgetAgregarProductoComanda
 
-class DetalleMesaDialog(QDialog):
-    def __init__(self, mesa, comandas, parent=None):
+class WidgetDetalleMesa(QWidget):
+    def __init__(self, mesa, parent=None):
         super().__init__(parent)
         self.mesa = mesa
-        self.comandas = []  # Inicializar como una lista vacía
-        self.setWindowTitle(f"Detalle de Mesa {mesa.numero}")
-        self.setGeometry(100, 100, 600, 400)
-        layout = QVBoxLayout()
+        self.comandas = []
+        self.on_volver = None
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        
+        layout = QVBoxLayout(self)
         
         info_layout = QFormLayout()
-        info_layout.addRow("Número:", QLabel(str(mesa.numero)))
-        info_layout.addRow("Estado:", QLabel(mesa.estado))
+        detalle_layout = QHBoxLayout()
+        detalle_layout.addWidget(QLabel(f"Mesa número: {str(mesa.numero)}"))
+        detalle_layout.addWidget(QLabel(f"Estado: {mesa.estado}"))
         if mesa.estado == "Reservada":
-            info_layout.addRow("Reservada a:", QLabel(mesa.reservada_a))
+            detalle_layout.addWidget(QLabel(f"Reservada a: {mesa.reservada_a}"))
+        fila = QWidget()
+        fila.setLayout(detalle_layout)
+
+        info_layout.addRow(fila)
         layout.addLayout(info_layout)
-        
-        botones_layout = QHBoxLayout()
-        self.boton_libre = QPushButton("Libre")
-        self.boton_libre.clicked.connect(lambda: self.cambiar_estado("Libre"))
-        botones_layout.addWidget(self.boton_libre)
-
-        self.boton_ocupada = QPushButton("Ocupada")
-        self.boton_ocupada.clicked.connect(lambda: self.cambiar_estado("Ocupada"))
-        botones_layout.addWidget(self.boton_ocupada)
-
-        self.boton_reservada = QPushButton("Reservada")
-        self.boton_reservada.clicked.connect(lambda: self.cambiar_estado("Reservada"))
-        botones_layout.addWidget(self.boton_reservada)
-
-        layout.addLayout(botones_layout)
         
         self.table = QTableWidget()
         self.table.setColumnCount(8)
-        self.table.setHorizontalHeaderLabels(["ID Comanda", "Producto", "Cantidad", "Estado", "Notas", "Ing. Excluidos", "Ing. Agregados", "Subtotal"])
+        self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setHorizontalHeaderLabels(["ID", "Producto", "Cant.", "Estado", "Notas", "Ing. Excluidos", "Ing. Agregados", "Subtotal"])
         
-        # Llamar a actualizar_comandas para inicializar self.comandas
-        self.actualizar_comandas()
+        self.table.setColumnWidth(0, 40)
+        self.table.setColumnWidth(1, 300)
+        self.table.setColumnWidth(2, 40)
+        self.table.setColumnWidth(3, 110)
+        self.table.setColumnWidth(7, QHeaderView.Stretch)
 
+        self.actualizar_comandas()
         layout.addWidget(self.table)
 
         botones_cobrar_layout = QHBoxLayout()
         self.boton_agregar_producto = QPushButton("Agregar Producto")
         self.boton_agregar_producto.clicked.connect(self.agregar_producto)
+        self.boton_agregar_producto.setProperty("clase", "highlight2_btn")
         botones_cobrar_layout.addWidget(self.boton_agregar_producto)
 
         self.boton_cobrar = QPushButton("Cobrar")
         self.boton_cobrar.clicked.connect(self.cobrar)
+        self.boton_cobrar.setProperty("clase", "highlight2_btn")
         botones_cobrar_layout.addWidget(self.boton_cobrar)
 
         layout.addLayout(botones_cobrar_layout)
-
-        self.setLayout(layout)
+        
+        self.boton_volver = QPushButton("Volver")
+        self.boton_volver.clicked.connect(self.volver)
+        self.boton_volver.setProperty("clase", "highlight2_btn")
+        layout.addWidget(self.boton_volver)
 
     def cambiar_estado(self, nuevo_estado):
         if nuevo_estado == "Reservada":
@@ -70,67 +72,100 @@ class DetalleMesaDialog(QDialog):
                 cambiar_estado_mesa(self.mesa.id, nuevo_estado, nombre)
         else:
             cambiar_estado_mesa(self.mesa.id, nuevo_estado)
-        self.accept()
+        self.actualizar_comandas()
 
     def agregar_producto(self):
-        dialog = AgregarProductoComandaDialog(self)
-        if dialog.exec_() == QDialog.Accepted:
-            producto, cantidad, notas = dialog.obtener_seleccion()
-            if producto:
-                comanda_activa = next((comanda for comanda in self.comandas if comanda.estado == "Pendiente"), None)
+        if self.on_agregar_producto:
+            self.on_agregar_producto(self.mesa)
 
-                if not comanda_activa:
-                    comanda_id = crear_comanda(self.mesa.id)
-                    comanda_activa = Comanda(comanda_id, self.mesa.id, None, "Pendiente", "Comer en el lugar", None)
-                    self.comandas.append(comanda_activa)
+    def procesar_agregado_producto(self, seleccion):
+        producto, cantidad, notas = seleccion
+        if producto:
+            comanda_activa = next((comanda for comanda in self.comandas if comanda.estado == "Pendiente"), None)
+            if not comanda_activa:
+                comanda_id = crear_comanda(self.mesa.id)
+                comanda_activa = Comanda(comanda_id, self.mesa.id, None, "Pendiente", "Comer en el lugar", None)
+                self.comandas.append(comanda_activa)
+            agregar_producto_a_comanda(comanda_activa.id, producto["id"], cantidad, notas)
+            self.actualizar_comandas()
+        self.ocultar_widget_agregar_producto()
 
-                agregar_producto_a_comanda(comanda_activa.id, producto["id"], cantidad, notas)
-
-                self.actualizar_comandas()
+    def ocultar_widget_agregar_producto(self):
+        if hasattr(self, "widget_agregar") and self.widget_agregar is not None:
+            self.layout().removeWidget(self.widget_agregar)
+            self.widget_agregar.deleteLater()
+            self.widget_agregar = None
 
     def actualizar_comandas(self):
-        # Obtener las comandas desde la API
         comandas_dict = obtener_comandas_por_mesa(self.mesa.id)
-        
-        # Convertir los diccionarios en objetos Comanda
         self.comandas = []
-        for comanda_dict in comandas_dict:
+        for c in comandas_dict:
             comanda = Comanda(
-                id=comanda_dict["id"],
-                mesa_id=comanda_dict["mesa_id"],
-                fecha_hora=comanda_dict["fecha_hora"],
-                estado=comanda_dict["estado"],
-                tipo=comanda_dict["tipo"],
-                metodo_pago=comanda_dict.get("metodo_pago", None)
+                c["id"],
+                c["mesa_id"],
+                c.get("fecha_hora"),
+                c["estado"],
+                c.get("tipo"),
+                c.get("metodo_pago")
             )
-            
-            # Convertir los detalles de la comanda
-            comanda.detalles = [
-                DetalleComanda(
-                    id=detalle["id"],
-                    comanda_id=detalle["comanda_id"],
-                    producto_id=detalle["producto_id"],
-                    producto_nombre=detalle["producto_nombre"],
-                    cantidad=detalle["cantidad"],
-                    estado=detalle["estado"],
-                    notas=detalle.get("notas", ""),
-                    ingredientes_excluidos=detalle.get("ingredientes_excluidos", ""),
-                    ingredientes_agregados=detalle.get("ingredientes_agregados", ""),
-                    subtotal=detalle["subtotal"]
-                )
-                for detalle in comanda_dict.get("detalles", [])
-            ]
-            
+            if "detalles" in c:
+                comanda.detalles = [
+                    DetalleComanda(
+                        d["id"],
+                        d["comanda_id"],
+                        d["producto_id"],
+                        d["producto_nombre"],
+                        d["cantidad"],
+                        d["estado"],
+                        d.get("notas", ""),
+                        d.get("ingredientes_excluidos", ""),
+                        d.get("ingredientes_agregados", ""),
+                        d["subtotal"]
+                    )
+                    for d in c["detalles"]
+                ]
             self.comandas.append(comanda)
 
-        # Actualizar la tabla de comandas
-        self.actualizar_tabla_comandas()
+        detalles = []
+        for comanda in self.comandas:
+            for detalle in comanda.detalles:
+                detalles.append((
+                    comanda.id,
+                    detalle.producto_nombre,
+                    detalle.cantidad,
+                    detalle.estado,
+                    detalle.notas,
+                    detalle.ingredientes_excluidos,
+                    detalle.ingredientes_agregados,
+                    detalle.subtotal
+                ))
+
+        self.table.setUpdatesEnabled(False)
+        self.table.setSortingEnabled(False)
+        self.table.clearContents()
+        self.table.setRowCount(len(detalles))
+        for row, d in enumerate(detalles):
+            productoName = QTableWidgetItem(str(d[1]))
+            productoName.setToolTip(d[1])
+            self.table.setItem(row, 0, QTableWidgetItem(str(d[0])))
+            self.table.setItem(row, 1, productoName)
+            self.table.setItem(row, 2, QTableWidgetItem(str(d[2])))
+            self.table.setItem(row, 3, QTableWidgetItem(d[3]))
+            self.table.setItem(row, 4, QTableWidgetItem(d[4] if d[4] else ""))
+            self.table.setItem(row, 5, QTableWidgetItem(d[5] if d[5] else ""))
+            self.table.setItem(row, 6, QTableWidgetItem(d[6] if d[6] else ""))
+            self.table.setItem(row, 7, QTableWidgetItem(f"${d[7]:.2f}"))
+        self.table.setUpdatesEnabled(True)
+        self.table.setSortingEnabled(True)
 
     def actualizar_tabla_comandas(self):
         detalles = []
         for comanda in self.comandas:
             detalles.extend(comanda.detalles)
-        
+
+        self.table.setUpdatesEnabled(False)
+        self.table.setSortingEnabled(False)
+        self.table.clearContents()
         self.table.setRowCount(len(detalles))
         for row, detalle in enumerate(detalles):
             self.table.setItem(row, 0, QTableWidgetItem(str(detalle.comanda_id)))
@@ -141,6 +176,8 @@ class DetalleMesaDialog(QDialog):
             self.table.setItem(row, 5, QTableWidgetItem(detalle.ingredientes_excluidos if detalle.ingredientes_excluidos else ""))
             self.table.setItem(row, 6, QTableWidgetItem(detalle.ingredientes_agregados if detalle.ingredientes_agregados else ""))
             self.table.setItem(row, 7, QTableWidgetItem(f"${detalle.subtotal:.2f}"))
+        self.table.setUpdatesEnabled(True)
+        self.table.setSortingEnabled(True)
 
     def cobrar(self):
         total = sum(float(self.table.item(row, 7).text().replace('$', '')) for row in range(self.table.rowCount()))
@@ -193,4 +230,10 @@ class DetalleMesaDialog(QDialog):
 
         self.actualizar_comandas()
 
-        self.accept()
+        self.volver()
+    
+    def volver(self):
+        if self.on_volver:
+            self.on_volver()
+        else:
+            self.setParent(None)

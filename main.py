@@ -1,4 +1,8 @@
-from windows.main_window import iniciar_interfaz
+from PyQt5.QtWidgets import QApplication
+from windows.main_window import MainWindow
 
 if __name__ == "__main__":
-    iniciar_interfaz()
+    app = QApplication([])
+    window = MainWindow()
+    window.show()
+    app.exec_()

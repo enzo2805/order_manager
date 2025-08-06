@@ -33,7 +33,6 @@ class GestionarIngredientesDialog(QDialog):
         self.cargar_ingredientes()
 
     def cargar_ingredientes(self):
-        # Llama a la API para obtener los ingredientes
         ingredientes = obtener_ingredientes()
         self.table.setRowCount(len(ingredientes))
         for row, ingrediente in enumerate(ingredientes):
@@ -60,7 +59,6 @@ class GestionarIngredientesDialog(QDialog):
         if not ok or not unidad:
             return
 
-        # Llama a la API para agregar el ingrediente
         agregar_ingrediente(nombre, stock, stock_minimo, unidad)
         self.cargar_ingredientes()
 
@@ -87,7 +85,6 @@ class GestionarIngredientesDialog(QDialog):
         if not ok or not unidad:
             return
 
-        # Llama a la API para editar el ingrediente
         editar_ingrediente(ingrediente_id, nombre, stock, stock_minimo, unidad)
         self.cargar_ingredientes()
 
@@ -100,6 +97,5 @@ class GestionarIngredientesDialog(QDialog):
         ingrediente_id = int(self.table.item(row, 0).text())
         respuesta = QMessageBox.question(self, "Eliminar Ingrediente", "¿Está seguro de que desea eliminar este ingrediente?", QMessageBox.Yes | QMessageBox.No)
         if respuesta == QMessageBox.Yes:
-            # Llama a la API para eliminar el ingrediente
             eliminar_ingrediente(ingrediente_id)
             self.cargar_ingredientes()

@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://localhost:5000"  # Cambia esto si el servidor está en otra dirección o puerto
+BASE_URL = "http://127.0.0.1:5000"
 
 def obtener_mesas():
     response = requests.get(f"{BASE_URL}/mesas")
@@ -65,7 +65,9 @@ def cambiar_estado_detalle_comanda(comanda_id, estado):
     return response.json()
 
 def cambiar_estado_comanda(comanda_id, estado, metodo_pago=None):
-    payload = {"estado": estado, "metodo_pago": metodo_pago}
+    payload = {"estado": estado}
+    if metodo_pago:
+        payload["metodo_pago"] = metodo_pago
     response = requests.put(f"{BASE_URL}/comanda/{comanda_id}/estado", json=payload)
     response.raise_for_status()
     return response.json()
