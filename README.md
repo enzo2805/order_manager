@@ -34,10 +34,30 @@
    pip install Flask
 
    ```
-4. Ejecuta la aplicación:  
+4. [Crea e inicializa la base de datos](#-inicialización-de-la-base-de-datos)
+
+5. Ejecuta la aplicación:  
    ```bash
-   python main.py
+   python app.py #Api
+   python main.py #Principal
+   python cocina.py #Comandas para la cocina
    ```
+
+## 🗄️ Inicialización de la base de datos
+
+Antes de ejecutar la aplicación por primera vez, debes crear la base de datos y las tablas necesarias.
+
+1. **Crea las tablas principales ejecutando:**
+   ```bash
+   python db.py
+   ```
+   Esto generará el archivo `comedor.db` con todas las tablas requeridas para el sistema.
+
+2. **(Opcional) Inicializa las mesas con datos de ejemplo:**
+   ```bash
+   python script.py
+   ```
+   Este script agrega 10 mesas en estado "Libre" para que puedas comenzar a probar la aplicación de inmediato.
 
 ## 🌟 Contribuciones  
 ¡Las contribuciones son bienvenidas! Si quieres mejorar **Order Manager**, sigue estos pasos:  
