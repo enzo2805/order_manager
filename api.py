@@ -34,9 +34,6 @@ from controllers import (
 app = Flask(__name__)
 CORS(app)
 
-app = Flask(__name__)
-CORS(app)
-
 @app.route('/mesas', methods=['GET'])
 def obtener_mesas_endpoint():
     try:
